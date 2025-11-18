@@ -1,0 +1,75 @@
+<nav class="navbar navbar-expand-sm navbar-dark bg-white">
+    <div class="container-fluid" style="padding: 0.7rem">
+        <i class="fa-solid fa-teeth"></i>
+        <a class="navbar-brand active" href="/" style="color: black;"> Teeth Tooth</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mynavbar">
+            <ul class="navbar-nav me-auto">
+                {%for c in cates%}
+                <li class="nav-item me-5">
+                    <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
+                        <span class="material-symbols-rounded">{{c.icon}}</span>
+                        {{c.name}}</a>
+                </li>
+                {%endfor%}
+            </ul>
+            <a href="/" class="text-dark"> <i class="fa-solid fa-user"></i></a>
+            <a href="/" class="text-dark"> <i class="fa-solid fa-cart-shopping"></i></a>
+
+            <form class="d-flex" style="width: 250px" method="get">
+                <input class="form-control me-2" type="text" placeholder="Nhập từ khóa..." name="q">
+                <button class="btn btn-primary" type="submit" style="background-color: black;">
+                    <i class="fa-solid fa-magnifying-glass "></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</nav>
+
+<aside class="sidebar">
+    <header class="sidebar-header">
+        <nav class="sidebar-nav">
+            <ul class="nav-list primary-nav">
+                <li class="nav-item">
+                    <a href="/" class="nav-link">
+                        <span class="material-symbols-rounded">menu</span>
+                        <span class="nav-label">Trang chủ</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">notifications</span>
+                        <span class="nav-label">Thông báo</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">dashboard</span>
+                        <span class="nav-label">Quản lý bệnh nhân</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">analytics</span>
+                        <span class="nav-label">Thống kê</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">star</span>
+                        <span class="nav-label">Đánh dấu</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">settings</span>
+                        <span class="nav-label">Cài đặt</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+</aside>

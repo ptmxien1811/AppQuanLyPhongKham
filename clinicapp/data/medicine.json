@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "medicine_name": "Paracetamol",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "prescription_date": "25/07/2025"
+  },
+  {
+    "id": 2,
+    "medicine_name": "Paracetamol",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "prescription_date": "25/07/2025"
+  },
+  {
+    "id": 3,
+    "medicine_name": "Paracetamol",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "prescription_date": "25/07/2025"
+  }
+]

@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Momo+Trust+Display&display=swap');
+
+
+* {
+    font-family: "Momo Trust Display",sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.navbar-collapse.navbar-nav {
+        gap: 12px;
+}
+
+.navbar-nav .material-symbols-rounded {
+    vertical-align: middle;
+
+
+}
+
+.sidebar {
+    width: 200px;
+    position: fixed;
+    background: #102c3c;
+    height: 100%;
+}
+
+.sidebar-header {
+    display: flex;
+    padding: 25px 20px;
+    /*align-items: center;*/
+    justify-content: space-between;
+    height: 100%;
+}
+
+.row.align-items-end.mb-4 label{
+    color: #1E7BD0;
+}
+
+.app-container {
+    background-color: #ffffff;
+    list-style:none;
+    display: flex;
+    gap: 2px;
+    padding: 0 0px;
+    flex-direction: column;
+}
+
+.sidebar-nav .nav-list {
+    list-style:none;
+    display: flex;
+    gap: 2px;
+    padding: 0 0px;
+    flex-direction: column;
+}
+
+.sidebar-header .header-logo img {
+    width: 46px;
+    height: 46px;
+    display: block;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.body {
+    background-color: #102c3c;
+}
+
+.sidebar-nav .nav-link {
+    color: #fff;
+    padding: 12px 15px;
+    display: flex;
+    gap: 12px;
+    transition: 0.4s ease;
+    text-decoration: none;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: #151A2D;
+    background: #fff;
+    border-radius: 10px;
+}
+
+
+
+.fa-dumpster-fire {
+    font-size: 35px;
+}
+
+.fa-cart-shopping {
+    font-size: 25px;
+    margin-right: 5px
+}
+
+.fa-user {
+    font-size: 25px;
+    margin-right: 5px;
+}
+
+.container-fluid {
+    gap: 7px;
+}
+
+.discount a {
+    font-size: 25px;
+    color: white !important;
+}
+.fa-teeth  {
+        font-size: 35px;
+    margin-right: 5px
+}
+
+.discount {
+    margin: 0 auto;
+}
+
+
+.treatment-form-wrapper {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    background-color: white;
+    max-width: 1640px;
+    margin: 20px auto;
+    height: 800px;
+    margin-left: 240px;
+}
+
+/* Các style tùy chỉnh khác giữ nguyên */
+.table .material-symbols-rounded {
+    font-size: 15px;
+}
+
+.material-symbols-rounded {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24;
+}
+
+.action-bar {
+    align-items:center;
+    padding: 15px;
+}
+
+.treat-action {
+    white-space: nowrap;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    display: flex;
+    height: 37px;
+}
