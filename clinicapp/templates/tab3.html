@@ -6,38 +6,43 @@
     <h3 class="mb-4 d-flex align-items-center">
         <span class="material-symbols-rounded me-2">list_alt</span> Quản lý thuốc
     </h3>
+    <hr>
+    <form>
+        <div class="row align-items-end mb-4">
+            <div class="col-md-3 mb-3">
+                <label for="medicine_name" class="form-label">Tên thuốc</label>
+                <input type="text" class="form-control" id="medicine_name" placeholder="Nhập tên thuốc">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="dosage" class="form-label">Liều dùng</label>
+                <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="unit" class="form-label">Đơn vị</label>
+                <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="number_of_days" class="form-label">Số ngày</label>
+                <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="prescription_date" class="form-label">Ngày kê đơn</label>
+                <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
+            </div>
+            <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+                <button class="btn btn-primary me-2 treat-action">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+                <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc" name="q">
+                <button class="btn btn-outline-primary treat-action" type="submit">
+                    <span class="material-symbols-rounded">search</span> Tìm kiếm
+                </button>
+            </div>
 
-    <div class="row align-items-end mb-4">
-        <div class="col-md-3 mb-3">
-            <label for="medicine_name" class="form-label">Tên thuốc</label>
-            <input type="text" class="form-control" id="medicine_name" placeholder="Nhập tên thuốc">
+
         </div>
-        <div class="col-md-3 mb-3">
-            <label for="dosage" class="form-label">Liều dùng</label>
-            <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="unit" class="form-label">Đơn vị</label>
-            <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="number_of_days" class="form-label">Số ngày</label>
-            <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="prescription_date" class="form-label">Ngày kê đơn</label>
-            <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
-        </div>
-        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <button class="btn btn-primary me-2 treat-action">
-                <span class="material-symbols-rounded">add_box</span> Thêm mới
-            </button>
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc">
-            <button class="btn btn-outline-primary treat-action">
-                <span class="material-symbols-rounded">search</span> Tìm kiếm
-            </button>
-        </div>
-    </div>
+    </form>
+
 
     <div class="card shadow-sm">
         <div class="card-header border-bottom-0">

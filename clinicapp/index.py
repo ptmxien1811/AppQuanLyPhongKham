@@ -7,7 +7,6 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    q = request.args.get('q')
     cate_id = request.args.get('cate_id')
 
 
@@ -23,12 +22,16 @@ def index():
 
 @app.route('/cate_id/<int:id>')
 def create_form(id):
+    q = request.args.get('q')
+    print(q)
+    meds= dao.load_medicines(q=q)
+
     if (id==2):
         return render_template("tab1.html")
     elif (id==1):
         return render_template("tab2.html")
     elif (id==3):
-        return render_template("tab3.html")
+        return render_template("tab3.html",meds=meds)
     elif (id==4):
         return render_template("tab4.html")
     else:
@@ -38,8 +41,8 @@ def create_form(id):
 def common_attribute():
     return {
         "cates":dao.load_categories(),
-        "meds":dao.load_medicines()
     }
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    with app.app_context():
+        app.run(debug=True)

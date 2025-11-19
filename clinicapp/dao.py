@@ -7,12 +7,13 @@ def load_categories():
         return cates
 
 
-def load_medicines():
+def load_medicines(q=None):
     with open('data/medicine.json', encoding='utf-8') as f:
         meds = json.load(f)
 
-        # if q:
-        #     prods = [p for p in prods if p["name"].find(q)>=0]
+        if q:
+            meds = [m for m in meds if m["medicine_name"].find(q)>=0]
+
         # if cate_id:
         #    prods = [p for p in prods if p["cate_id"].__eq__(int(cate_id))]
         return meds
@@ -30,4 +31,4 @@ def load_medicines():
 
 
 if __name__ == '__main__':
-    print(get_product_by_id(id))
+    print(load_categories())

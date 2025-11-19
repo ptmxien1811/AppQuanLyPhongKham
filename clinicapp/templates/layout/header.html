@@ -10,7 +10,7 @@
                 {%for c in cates%}
                 <li class="nav-item me-5">
                     <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
-                        <span class="material-symbols-rounded">{{c.icon}}</span>
+                        <span class="material-symbols-rounded me-1">{{c.icon}}</span>
                         {{c.name}}</a>
                 </li>
                 {%endfor%}
@@ -19,7 +19,7 @@
             <a href="/" class="text-dark"> <i class="fa-solid fa-cart-shopping"></i></a>
 
             <form class="d-flex" style="width: 250px" method="get">
-                <input class="form-control me-2" type="text" placeholder="Nhập từ khóa..." name="q">
+                <input class="form-control me-2" type="text" placeholder="Nhập từ khóa...">
                 <button class="btn btn-primary" type="submit" style="background-color: black;">
                     <i class="fa-solid fa-magnifying-glass "></i>
                 </button>
