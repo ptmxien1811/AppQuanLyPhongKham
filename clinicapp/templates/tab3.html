@@ -68,7 +68,7 @@
                     {% for m in meds%}
                     <tr>
                         <td>{{m.id}}</td>
-                        <td>{{m.medicine_name}}</td>
+                        <td>{{m.name}}</td>
                         <td>{{m.dosage}}</td>
                         <td>{{m.unit}}</td>
                         <td>{{m.number_of_days}}</td>
@@ -87,12 +87,11 @@
 
     <nav class="d-flex justify-content-end mt-3">
         <ul class="pagination pagination-sm mb-0">
+
             <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">4</a></li>
-            <li class="page-item"><a class="page-link" href="#">5</a></li>
+                        {% for i in range(1, pages+1)%}
+                        <li class="page-item"><a class="page-link" href="/?page={{i}}">{{i}}</a></li>
+                        {%endfor%}
             <li class="page-item"><a class="page-link" href="#">»</a></li>
         </ul>
     </nav>
