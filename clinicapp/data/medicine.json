@@ -4,39 +4,34 @@
     "name": "Paracetamol",
     "dosage": 2,
     "unit": "viên/ngày",
-    "number_of_days": 5,
-    "prescription_date": "2025-07-22"
+    "number_of_days": 5
   },
   {
     "id": 2,
     "name": "Amoxicillin",
     "dosage": 2,
     "unit": "viên/lần x 2 lần/ngày",
-    "number_of_days": 7,
-    "prescription_date": "2025-07-22"
+    "number_of_days": 7
   },
   {
     "id": 3,
     "name": "Alphachymotrypsin (Kháng viêm)",
     "dosage": 1,
     "unit": "viên/lần x 3 lần/ngày",
-    "number_of_days": 5,
-    "prescription_date": "2025-07-22"
+    "number_of_days": 5
   },
   {
     "id": 4,
     "name": "Enterogermina (Men tiêu hóa)",
     "dosage": 1,
     "unit": "ống/lần x 2 lần/ngày",
-    "number_of_days": 3,
-    "prescription_date": "2025-07-22"
+    "number_of_days": 3
   },
     {
     "id": 5,
     "name": "Lactulose (Thuốc táo bón)",
     "dosage": 15,
     "unit": "ml/lần x 1 lần/ngày",
-    "number_of_days": 3,
-    "prescription_date": "2025-07-22"
+    "number_of_days": 3
   }
 ]

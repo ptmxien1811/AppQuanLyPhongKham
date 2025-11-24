@@ -18,16 +18,21 @@
 
 {%block content%}
 
+{%if err_msg%}
+<div class="alert alert-danger">{{err_msg}}</div>
+
+{%endif%}
 <body>
     <div class="wrapper">
-        <form action="">
+
+        <form method="POST">
             <h1>Đăng nhập</h1>
             <div class="input-box">
-                <input type="text" placeholder="Tên đăng nhập" required>
+                <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required>
                 <span class="material-symbols-rounded me-2">person</span>
             </div>
             <div class="input-box">
-                <input type="password" placeholder="Mật khẩu" required>
+                <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
                 <span class="material-symbols-rounded me-2">lock</span>
             </div>
 

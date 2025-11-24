@@ -17,7 +17,17 @@
     border-color: inherit;
     text-decoration: none;
     background-color: #102c3c;
+}
 
+.navbar-collapse .logout {
+    text-decoration: none;
+    border-radius:10px;
+    height: 40%;
+    width: 8%;
+    margin-right:25px;
+    color: white;
+    border-color: inherit;
+    background-color: #102c3c;
 }
 
 .navbar-collapse.navbar-nav {
@@ -37,7 +47,14 @@
     height: 100%;
 }
 
+
+
 .login a{
+    text-decoration:none;
+    color:white;
+}
+
+.logout a{
     text-decoration:none;
     color:white;
 }

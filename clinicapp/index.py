@@ -1,6 +1,7 @@
-from flask import render_template, request
-from clinicapp import dao, app
+from flask import render_template, request, redirect, url_for
+from clinicapp import dao, app, login, admin
 import math
+from flask_login import login_user, current_user, logout_user
 
 @app.route('/')
 def index():
@@ -28,15 +29,41 @@ def create_form(id):
     else:
         return render_template("tab5.html")
 
-@app.route('/login')
+@app.route('/login', methods=['get', 'post'])
 def login_my_user():
-    return render_template("login.html")
+    if current_user.is_authenticated:
+        return redirect('/')
+
+    err_msg= None
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = dao.auth_user(username,password)
+
+        if user:
+            login_user(user)
+            return redirect('/')
+        else:
+            err_msg = "Tài khoản hoặc mật khẩu không chính xác!"
+
+    return render_template("login.html",err_msg=err_msg)
+
+@app.route('/logout')
+def logout_my_user():
+    logout_user()
+    return redirect('/login')
 
 @app.context_processor
 def common_attribute():
     return {
         "cates":dao.load_categories(),
     }
+
+@login.user_loader
+def get_user(user_id):
+    return dao.get_user_by_id(user_id)
 
 if __name__ == '__main__':
     with app.app_context():

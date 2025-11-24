@@ -1,7 +1,9 @@
+import hashlib
 import json
 
 from clinicapp import app
-from models import Category, Medicine
+from models import Category, Medicine, User
+
 
 def load_categories():
     # Doc tu file json
@@ -11,6 +13,15 @@ def load_categories():
 
         return Category.query.all()
 
+def auth_user(username,password):
+
+    password=str(hashlib.md5(password.encode("utf-8")).hexdigest())
+
+    return User.query.filter(User.username.__eq__(username) and User.password.__eq__(password)).first()
+
+
+def get_user_by_id(id):
+    return User.query.get(id)
 
 def count_medicines():
     return Medicine.query.count()
@@ -53,4 +64,5 @@ def load_medicines(q=None,page=None):
 
 
 if __name__ == '__main__':
-    print(load_categories())
+    with app.app_context():
+        print(auth_user("user","123"))
