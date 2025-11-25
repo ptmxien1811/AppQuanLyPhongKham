@@ -7,94 +7,107 @@
         <span class="material-symbols-rounded me-2">list_alt</span> Quản lý thuốc sử dụng
     </h3>
     <hr>
-    <form>
+
+    <form method="post">
         <div class="row align-items-end mb-4">
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label for="medicine_name" class="form-label">Tên thuốc</label>
-                <input type="text" class="form-control" id="medicine_name" placeholder="Nhập tên thuốc">
+                <input type="text" class="form-control" id="medicine_name" placeholder="Nhập tên thuốc" name="tenthuoc" >
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label for="dosage" class="form-label">Liều dùng</label>
-                <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
+                <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng" name="lieudung">
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label for="unit" class="form-label">Đơn vị</label>
-                <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
+                <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng" name="donvi">
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <label for="number_of_days" class="form-label">Số ngày</label>
-                <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
+                <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày" name="songay">
             </div>
             <div class="col-md-2 mb-3">
                 <label for="prescription_date" class="form-label">Ngày kê đơn</label>
-                <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
+                <input type="date" class="form-control" id="prescription_date" value="2025-11-11" name="ngaykedon">
             </div>
-            <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-                <button class="btn btn-primary me-2 treat-action">
+            <div class="col-md-2 mb-3">
+<!--                name="action" value="add_new"-->
+                <button class="btn btn-primary me-2 treat-action" type="submit">
                     <span class="material-symbols-rounded">add_box</span> Thêm mới
                 </button>
-                <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc" name="q">
-                <button class="btn btn-outline-primary treat-action" type="submit">
-                    <span class="material-symbols-rounded">search</span> Tìm kiếm
-                </button>
             </div>
-
-
+    </form>
+    <form>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc" name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
         </div>
     </form>
 
 
-    <div class="card shadow-sm">
-        <div class="card-header border-bottom-0">
-            <p class="h6 mb-0 d-flex align-items-center">
-                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách đơn kê thuốc
-            </p>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                    <tr>
-                        <th style="width: 5%;">STT</th>
-                        <th style="width: 25%;">Tên thuốc</th>
-                        <th style="width: 15%;">Liều dùng</th>
-                        <th style="width: 15%;">Đơn vị</th>
-                        <th style="width: 15%;">Số ngày</th>
-                        <th style="width: 15%;">Ngày kê đơn</th>
-                        <th style="width: 5%;"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for m in meds%}
-                    <tr>
-                        <td>{{m.id}}</td>
-                        <td>{{m.name}}</td>
-                        <td>{{m.dosage}}</td>
-                        <td>{{m.unit}}</td>
-                        <td>{{m.number_of_days}}</td>
-                        <td>{{m.created_date}}</td>
-                        <td>
-                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
+</div>
+
+
+<div class="card shadow-sm">
+    <div class="card-header border-bottom-0">
+        <p class="h6 mb-0 d-flex align-items-center">
+            <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách đơn kê thuốc
+        </p>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                <tr>
+                    <th style="width: 5%;">STT</th>
+                    <th style="width: 25%;">Tên thuốc</th>
+                    <th style="width: 15%;">Liều dùng</th>
+                    <th style="width: 15%;">Đơn vị</th>
+                    <th style="width: 15%;">Số ngày</th>
+                    <th style="width: 15%;">Ngày kê đơn</th>
+                    <th style="width: 3%;">Xóa</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for m in meds%}
+                <tr>
+                    <td>{{m.id}}</td>
+                    <td>{{m.name}}</td>
+                    <td>{{m.dosage}}</td>
+                    <td>{{m.unit}}</td>
+                    <td>{{m.number_of_days}}</td>
+                    <td>{{m.created_date}}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_medicine', id=m.id) }}" style="display:inline;">
+
+                            <input type="hidden" name="action" value="delete_med">
+
+                            <button type="submit" class="btn text-danger p-0" title="Xóa mục kê đơn này"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa mục thuốc {{ m.name }} không?');">
+                                <span class="material-symbols-rounded delete">delete</span>
                             </button>
-                        </td>
-                    </tr>
-                    {%endfor%}
-                    </tbody>
-                </table>
-            </div>
+                        </form>
+                    </td>
+                </tr>
+                {%endfor%}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <nav class="d-flex justify-content-end mt-3">
-        <ul class="pagination pagination-sm mb-0">
+<nav class="d-flex justify-content-end mt-3">
+    <ul class="pagination pagination-sm mb-0">
 
-            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-                        {% for i in range(1, pages+1)%}
-                        <li class="page-item"><a class="page-link" href="/?page={{i}}">{{i}}</a></li>
-                        {%endfor%}
-            <li class="page-item"><a class="page-link" href="#">»</a></li>
-        </ul>
-    </nav>
+        <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+        {% for i in range(1, pages+1)%}
+        <li class="page-item"><a class="page-link" href="/?page={{i}}">{{i}}</a></li>
+        {%endfor%}
+        <li class="page-item"><a class="page-link" href="#">»</a></li>
+    </ul>
+</nav>
 </div>
 </body>
 {%endblock%}

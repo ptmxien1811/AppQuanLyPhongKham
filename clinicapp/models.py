@@ -36,12 +36,18 @@ class Category(Base):
         return self.name
 
 class Medicine(Base):
+    name = Column(String(150), nullable=False)
     dosage= Column(Integer,default=0)
     unit= Column(String(150),nullable=False)
     number_of_days= Column(Integer, default=0)
 
     def __str__(self):
         return self.name
+
+
+# ... (Các Model User, Category, Medicine ở trên) ...
+
+
 
 
 if __name__ == '__main__':
@@ -76,4 +82,7 @@ if __name__ == '__main__':
         db.session.add(u)
 
         # chay lenh, (phai chay moi cap nhat trong database, tuong tu nhu execute)
+
+
+
         db.session.commit()

@@ -1,7 +1,7 @@
 import hashlib
 import json
 
-from clinicapp import app
+from clinicapp import app, db
 from models import Category, Medicine, User
 
 
@@ -20,11 +20,53 @@ def auth_user(username,password):
     return User.query.filter(User.username.__eq__(username) and User.password.__eq__(password)).first()
 
 
+def delete_medicine_detail(med_id):
+    try:
+        # 1. Tìm bản ghi dựa trên ID
+        medicine_to_delete = Medicine.query.get(med_id)
+
+        if medicine_to_delete:
+            # 2. Xóa bản ghi
+            db.session.delete(medicine_to_delete)
+            # 3. Commit thay đổi
+            db.session.commit()
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"DAO ERROR (Delete): {e}")  # Rất quan trọng để debug nếu lỗi
+        return False
+
+
+
+def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon):
+    # tao doi tuong moi
+    new_medicine_detail = Medicine(
+        name=tenthuoc,
+        dosage=lieudung,
+        unit=donvi,
+        number_of_days=songay,
+        created_date=ngaykedon
+    )
+
+    try:
+        # add doi tuong vao db sau do commit
+        db.session.add(new_medicine_detail)
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
+        return False
+
+
 def get_user_by_id(id):
     return User.query.get(id)
 
 def count_medicines():
     return Medicine.query.count()
+
 
 def load_medicines(q=None,page=None):
     # with open('data/medicine.json', encoding='utf-8') as f:
@@ -41,6 +83,7 @@ def load_medicines(q=None,page=None):
 
     if q:
         query = query.filter(Medicine.name.contains(q))
+
 
     if page:
         size=app.config["PAGE_SIZE"]

@@ -1,7 +1,10 @@
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, redirect, url_for, flash
 from clinicapp import dao, app, login, admin
 import math
 from flask_login import login_user, current_user, logout_user
+
+from clinicapp.dao import add_medicine_detail, delete_medicine_detail
+
 
 @app.route('/')
 def index():
@@ -10,10 +13,38 @@ def index():
     return render_template("index.html",pages=pages)
 
 
-@app.route('/cate_id/<int:id>')
+@app.route('/delete-medicine/<int:id>', methods=['POST'])
+def delete_medicine(id):
+
+    if request.form.get('action') == 'delete_med':
+        if delete_medicine_detail(id):
+            print('Xoa thong tin thuoc thanh cong')
+        else:
+            print('Khong tim thay muc thuoc hoac bi loi khi xoa.')
+
+    #chuyen huong ve trng truoc do
+    return redirect(request.referrer)
+
+
+@app.route('/cate_id/<int:id>', methods=['GET', 'POST'])
 def create_form(id):
     q = request.args.get('q')
-    print(q)
+    tenthuoc = request.form.get('tenthuoc')
+    lieudung = request.form.get('lieudung')
+    donvi = request.form.get('donvi')
+    songay = request.form.get('songay')
+    ngaykedon = request.form.get('ngaykedon')
+
+    if add_medicine_detail(tenthuoc=tenthuoc,
+                           lieudung=lieudung,
+                           donvi=donvi,
+                           songay=songay,
+                           ngaykedon=ngaykedon):
+
+        print('Them thanh cong!')
+    else:
+        print('Loi khi dua du lieu vao CSDL!')
+
     page=request.args.get('page')
     meds= dao.load_medicines(q=q,page=page)
 

@@ -160,10 +160,16 @@
     margin-left: 240px;
 }
 
-/* Các style tùy chỉnh khác giữ nguyên */
+
 .table .material-symbols-rounded {
-    font-size: 15px;
+    font-size: 18px;
 }
+
+.table .material-symbols-rounded:hover {
+    font-size: 22px;
+
+}
+
 
 .material-symbols-rounded {
   font-variation-settings:
@@ -175,7 +181,6 @@
 
 .action-bar {
     align-items:center;
-    padding: 15px;
 }
 
 .treat-action {
@@ -186,3 +191,5 @@
     display: flex;
     height: 37px;
 }
+
+
