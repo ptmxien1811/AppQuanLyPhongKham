@@ -28,7 +28,7 @@
             </div>
             <div class="col-md-2 mb-3">
                 <label for="prescription_date" class="form-label">Ngày kê đơn</label>
-                <input type="date" class="form-control" id="prescription_date" value="2025-11-11" name="ngaykedon">
+                <input type="date" class="form-control" id="prescription_date" value="{{today}}" name="ngaykedon">
             </div>
             <div class="col-md-2 mb-3">
 <!--                name="action" value="add_new"-->
@@ -40,7 +40,7 @@
     <form>
         <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
             <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc" name="q">
-            <button class="btn btn-outline-primary treat-action" type="submit">
+            <button class="btn btn-outline-primary treat-action" type="submit" value="search">
                 <span class="material-symbols-rounded">search</span> Tìm kiếm
             </button>
         </div>
@@ -80,9 +80,9 @@
                     <td>{{m.number_of_days}}</td>
                     <td>{{m.created_date}}</td>
                     <td>
-                        <form method="POST" action="{{ url_for('delete_medicine', id=m.id) }}" style="display:inline;">
+                        <form method="POST" action="{{ url_for('delete_detail', id=m.id,name='Medicine') }}" style="display:inline;">
 
-                            <input type="hidden" name="action" value="delete_med">
+                            <input type="hidden" name="action" value="delete_details">
 
                             <button type="submit" class="btn text-danger p-0" title="Xóa mục kê đơn này"
                                     onclick="return confirm('Bạn có chắc chắn muốn xóa mục thuốc {{ m.name }} không?');">

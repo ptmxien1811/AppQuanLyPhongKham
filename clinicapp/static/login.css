@@ -122,3 +122,8 @@ font-weight: 600;
 .register-link p a:hover {
 text-decoration: underline;
 }
+
+#avatar {
+    padding: 10px 25px 5px ;
+
+}

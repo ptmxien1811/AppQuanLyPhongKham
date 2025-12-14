@@ -6,79 +6,90 @@
     <h3 class="mb-4 d-flex align-items-center">
         <span class="material-symbols-rounded me-2">list_alt</span> Lập phiếu điều trị
     </h3>
-<hr>
-    <div class="row align-items-end mb-4">
-        <div class="col-md-3 mb-3">
-            <label for="serviceSelect" class="form-label">Dịch vụ</label>
-            <input type="text" class="form-control" id="serviceSelect" placeholder="Nhập tên dịch vụ">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="noteInput" class="form-label">Ghi chú</label>
-            <input type="text" class="form-control" id="noteInput" placeholder="Nhập vào ghi chú">
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="dateInput" class="form-label">Ngày lập phiếu</label>
-            <input type="date" class="form-control" id="dateInput" value="2025-11-11">
-        </div>
+    <hr>
+
+    <form method="post">
+        <div class="row align-items-end mb-4">
+                       <div class="col-md-2 mb-3">
+                <label for="service_name" class="form-label">Tên dịch vụ</label>
+                <input type="text" class="form-control" id="service_name" placeholder="Chọn dịch vụ"
+                       name="dichvu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="price" class="form-label">Đơn giá</label>
+                <input type="text" class="form-control" id="price" placeholder="Đơn giá" name="dongia">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="note" class="form-label">Ghi chú</label>
+                <input type="text" class="form-control" id="note" placeholder="Nhập vào ghi chú" name="ghichu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="prescription_date" class="form-label">Ngày lập phiếu</label>
+                <input type="date" class="form-control" id="prescription_date" value="2025-12-12" name="ngaylapphieu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <!--                name="action" value="add_new"-->
+                <button class="btn btn-primary me-2 treat-action" type="submit">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+            </div>
+    </form>
+    <form>
         <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <button class="btn btn-primary me-2 treat-action">
-                <span class="material-symbols-rounded">add_box</span> Thêm mới
-            </button>
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên dịch vụ">
-            <button class="btn btn-outline-primary treat-action">
+            <input type="text" class="form-control w-50 me-2" placeholder="Tìm kiếm dịch vụ, ghi chú..." name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit">
                 <span class="material-symbols-rounded">search</span> Tìm kiếm
             </button>
         </div>
-    </div>
+    </form>
 
-    <div class="card shadow-sm">
-        <div class="card-header border-bottom-0">
-            <p class="h6 mb-0 d-flex align-items-center">
-                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách các dịch vụ
-            </p>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                    <tr>
-                        <th style="width: 5%;">STT</th>
-                        <th style="width: 30%;">Dịch vụ</th>
-                        <th style="width: 15%;">Đơn giá</th>
-                        <th style="width: 30%;">Ghi chú</th>
-                        <th style="width: 15%;">Ngày lập phiếu</th>
-                        <th style="width: 5%;"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Trám răng</td>
-                        <td>300.000</td>
-                        <td>Răng sâu nhẹ</td>
-                        <td>25/07/2025</td>
-                        <td>
-                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
+</div>
+
+
+<div class="card shadow-sm">
+    <div class="card-header border-bottom-0">
+        <p class="h6 mb-0 d-flex align-items-center">
+            <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách đơn kê thuốc
+        </p>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                <tr>
+                    <th style="width: 5%;">STT</th>
+                    <th style="width: 25%;">Dịch vụ</th>
+                    <th style="width: 15%;">Đơn giá</th>
+                    <th style="width: 15%;">Ghi chú</th>
+                    <th style="width: 15%;">Ngày kê đơn</th>
+                    <th style="width: 3%;">Xóa</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for s in serv%}
+                <tr>
+                    <td>{{s.id}}</td>
+                    <td>{{s.name}}</td>
+                    <td>{{s.price}}</td>
+                    <td>{{s.note}}</td>
+                    <td>{{s.created_date}}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_detail', id=s.id,name='TreatmentSheet') }}" style="display:inline;">
+
+                            <input type="hidden" name="action" value="delete_details">
+
+                            <button type="submit" class="btn text-danger p-0" title="Xóa mục kê đơn này"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa mục thuốc {{ s.name }} không?');">
+                                <span class="material-symbols-rounded delete">delete</span>
                             </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+                        </form>
+                    </td>
+                </tr>
+                {%endfor%}
+                </tbody>
+            </table>
         </div>
     </div>
-
-    <nav class="d-flex justify-content-end mt-3">
-        <ul class="pagination pagination-sm mb-0">
-            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">4</a></li>
-            <li class="page-item"><a class="page-link" href="#">5</a></li>
-            <li class="page-item"><a class="page-link" href="#">»</a></li>
-        </ul>
-    </nav>
 </div>
 </body>
 {%endblock%}
