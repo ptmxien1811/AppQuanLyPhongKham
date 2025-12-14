@@ -1,0 +1,77 @@
+[
+  {
+    "id": 1,
+    "name": "Trám răng (Composite)",
+    "price": "300.000"
+  },
+  {
+    "id": 2,
+    "name": "Nhổ răng sữa",
+    "price": "50.000"
+  },
+  {
+    "id": 3,
+    "name": "Nhổ răng vĩnh viễn",
+    "price": "450.000"
+  },
+  {
+    "id": 4,
+    "name": "Lấy tủy răng (Nội nha)",
+    "price": "900.000"
+  },
+  {
+    "id": 5,
+    "name": "Cạo vôi răng (Đánh bóng)",
+    "price": "250.000"
+  },
+  {
+    "id": 6,
+    "name": "Tẩy trắng răng (Tại phòng)",
+    "price": "1.500.000"
+  },
+  {
+    "id": 7,
+    "name": "Tiểu phẫu răng khôn (Mọc thẳng)",
+    "price": "1.000.000"
+  },
+  {
+    "id": 8,
+    "name": "Phẫu thuật răng khôn (Mọc lệch)",
+    "price": "2.500.000"
+  },
+  {
+    "id": 9,
+    "name": "Bọc răng sứ Kim loại (Titan)",
+    "price": "2.000.000"
+  },
+  {
+    "id": 10,
+    "name": "Bọc răng sứ Toàn sứ (Cercon)",
+    "price": "5.500.000"
+  },
+  {
+    "id": 11,
+    "name": "Dán sứ Veneer",
+    "price": "6.000.000"
+  },
+  {
+    "id": 12,
+    "name": "Chụp X-quang Panorex",
+    "price": "150.000"
+  },
+  {
+    "id": 13,
+    "name": "Niềng răng mắc cài kim loại",
+    "price": "25.000.000"
+  },
+  {
+    "id": 14,
+    "name": "Cấy ghép Implant (Hàn Quốc)",
+    "price": "14.000.000"
+  },
+  {
+    "id": 15,
+    "name": "Điều trị viêm nướu/Nha chu",
+    "price": "500.000"
+  }
+]

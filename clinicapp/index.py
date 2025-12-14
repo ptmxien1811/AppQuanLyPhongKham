@@ -29,10 +29,10 @@ def delete_detail(id,name):
 @app.route('/cate_id/<int:id>', methods=['GET', 'POST'])
 def create_form(id):
     q = request.args.get('q')
-
     page=request.args.get('page')
-
     pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
+    page = request.args.get('page', 1, type=int)
+
     if (id==2):
         dichvu = request.form.get('dichvu')
         dongia = request.form.get('dongia')
@@ -48,12 +48,13 @@ def create_form(id):
         else:
             print('Loi khi dua du lieu vao CSDL!')
 
-        serv=dao.load_services(q=q)
-
-        return render_template("tab1.html",serv=serv,q=q)
+        treatm=dao.load_treatmentsheet(q=q,page=page)
+        serv=dao.load_services()
+        return render_template("pages/tab1.html",treatm=treatm,q=q,pages=pages,serv=serv)
     elif (id==1):
-        return render_template("tab2.html")
+        return render_template("pages/tab2.html")
     elif (id==3):
+
         today=date.today()
         today_formatted=today.strftime('%Y-%m-%d')
 
@@ -74,13 +75,15 @@ def create_form(id):
         else:
             print('Loi khi dua du lieu vao CSDL!')
 
+
         meds = dao.load_medicines(q=q, page=page)
 
-        return render_template("tab3.html",meds=meds,pages=pages,today=today_formatted)
+
+        return render_template("pages/tab3.html",meds=meds,pages=pages,today=today_formatted)
     elif (id==4):
-        return render_template("tab4.html")
+        return render_template("pages/tab4.html")
     else:
-        return render_template("tab5.html")
+        return render_template("pages/tab5.html")
 
 
 @app.route('/register', methods=['GET', 'POST'])

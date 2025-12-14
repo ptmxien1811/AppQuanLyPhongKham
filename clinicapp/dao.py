@@ -2,7 +2,7 @@ import hashlib
 import json
 
 from clinicapp import app, db
-from models import Category, Medicine, User, TreatmentSheet
+from models import Category, Medicine, User, TreatmentSheet, Services
 
 
 def load_categories():
@@ -29,16 +29,16 @@ def delete_details(id,name):
 
 
     try:
-        # 1. Tìm bản ghi dựa trên ID
+        #  tim ban ghi dua tren ID
         if (name=='Medicine'):
             to_delete = Medicine.query.get(id)
         if (name=='TreatmentSheet'):
             to_delete = TreatmentSheet.query.get(id)
 
         if to_delete:
-            # 2. Xóa bản ghi
+            # xoa ban ghi
             db.session.delete(to_delete)
-            # 3. Commit thay đổi
+            # commit
             db.session.commit()
             return True
         else:
@@ -94,13 +94,22 @@ def count_medicines():
     return Medicine.query.count()
 
 
-def load_services(q=None):
+def load_treatmentsheet(q=None,page=None):
 
     query = TreatmentSheet.query
 
     if q:
         query = query.filter(TreatmentSheet.name.contains(q))
 
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)  # ham lay san pham tu diem bat dau cho den diem ket thuc
+
+    return query.all()
+
+def load_services():
+    query=Services.query
 
     return query.all()
 

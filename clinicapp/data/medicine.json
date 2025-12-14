@@ -1,14 +1,14 @@
 [
   {
     "id": 1,
-    "name": "Paracetamol",
+    "name": "Paracetamol 500mg",
     "dosage": 2,
-    "unit": "viên/ngày",
+    "unit": "viên/ngày (sáng, chiều)",
     "number_of_days": 5
   },
   {
     "id": 2,
-    "name": "Amoxicillin",
+    "name": "Amoxicillin 500mg",
     "dosage": 2,
     "unit": "viên/lần x 2 lần/ngày",
     "number_of_days": 7
@@ -27,11 +27,81 @@
     "unit": "ống/lần x 2 lần/ngày",
     "number_of_days": 3
   },
-    {
+  {
     "id": 5,
     "name": "Lactulose (Thuốc táo bón)",
     "dosage": 15,
     "unit": "ml/lần x 1 lần/ngày",
+    "number_of_days": 3
+  },
+  {
+    "id": 6,
+    "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày (sau ăn sáng)",
+    "number_of_days": 10
+  },
+  {
+    "id": 7,
+    "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần (uống khi đau)",
+    "number_of_days": 3
+  },
+  {
+    "id": 8,
+    "name": "Berberin (Tiêu chảy)",
+    "dosage": 10,
+    "unit": "viên/ngày (chia 2 lần)",
+    "number_of_days": 5
+  },
+  {
+    "id": 9,
+    "name": "Omeprazol 20mg (Dạ dày)",
+    "dosage": 1,
+    "unit": "viên/ngày (trước ăn 30p)",
+    "number_of_days": 14
+  },
+  {
+    "id": 10,
+    "name": "Smecta (Thuốc bột)",
+    "dosage": 3,
+    "unit": "gói/ngày (chia 3 lần)",
+    "number_of_days": 3
+  },
+  {
+    "id": 11,
+    "name": "Oresol (Bù nước)",
+    "dosage": 2,
+    "unit": "gói/ngày (pha 200ml)",
+    "number_of_days": 2
+  },
+  {
+    "id": 12,
+    "name": "Hoạt huyết dưỡng não",
+    "dosage": 4,
+    "unit": "viên/ngày (chia 2 lần)",
+    "number_of_days": 30
+  },
+  {
+    "id": 13,
+    "name": "Nước muối sinh lý 0.9%",
+    "dosage": 3,
+    "unit": "lần/ngày (súc họng)",
+    "number_of_days": 7
+  },
+  {
+    "id": 14,
+    "name": "Gaviscon (Trào ngược)",
+    "dosage": 2,
+    "unit": "gói/ngày (khi đau/sau ăn)",
+    "number_of_days": 7
+  },
+  {
+    "id": 15,
+    "name": "Efferalgan 500mg (Sủi)",
+    "dosage": 1,
+    "unit": "viên/lần (sốt > 38.5)",
     "number_of_days": 3
   }
 ]

@@ -39,7 +39,7 @@
     </form>
     <form>
         <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc" name="q">
+            <input type="text" class="form-control w-50 me-2" placeholder="Tìm kiếm tên thuốc" name="q">
             <button class="btn btn-outline-primary treat-action" type="submit" value="search">
                 <span class="material-symbols-rounded">search</span> Tìm kiếm
             </button>
@@ -103,7 +103,7 @@
 
         <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
         {% for i in range(1, pages+1)%}
-        <li class="page-item"><a class="page-link" href="/?page={{i}}">{{i}}</a></li>
+        <li class="page-item"><a class="page-link" href="{{ url_for('create_form', id=3, page=i, q=request.args.get('q', '')) }}">{{i}}</a></li>
         {%endfor%}
         <li class="page-item"><a class="page-link" href="#">»</a></li>
     </ul>

@@ -192,4 +192,19 @@
     height: 37px;
 }
 
+.navbar-nav li:hover a{
+    color:#1E7BD0 !important;
+
+}
+
+.navbar-collapse a:hover{
+        color:#1E7BD0 !important;
+}
+
+.navbar-collapse button a:hover{
+        color:#fff !important;
+}
+
+
+
 
