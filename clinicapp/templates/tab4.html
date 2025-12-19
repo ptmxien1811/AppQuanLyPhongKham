@@ -1,94 +1,183 @@
-{%extends 'layout/base.html'%}
+{% extends 'layout/base.html' %}
 
-{%block content%}
+{% block content %}
 <body style="background-color: #D5E1E6">
+
 <div class="treatment-form-wrapper p-4">
     <h3 class="mb-4 d-flex align-items-center">
-        <span class="material-symbols-rounded me-2">list_alt</span> Lập hóa đơn thanh toán
+        <span class="material-symbols-rounded me-2">list_alt</span>
+        Lập hóa đơn thanh toán
     </h3>
 
-    <div class="row align-items-end mb-4">
-        <div class="col-md-3 mb-3">
-            <label for="drug_name" class="form-label">Tên thuốc</label>
-            <input type="text" class="form-control" id="drug_name" placeholder="Nhập tên thuốc">
+    <!-- THÔNG TIN BỆNH NHÂN -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header">
+            <p class="h6 mb-0 d-flex align-items-center">
+                <span class="material-symbols-rounded me-2">person</span>
+                Thông tin bệnh nhân
+            </p>
         </div>
-        <div class="col-md-3 mb-3">
-            <label for="dosage" class="form-label">Liều dùng</label>
-            <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="unit" class="form-label">Đơn vị</label>
-            <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="number_of_days" class="form-label">Số ngày</label>
-            <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="prescription_date" class="form-label">Ngày kê đơn</label>
-            <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
-        </div>
-        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <button class="btn btn-primary me-2 treat-action">
-                <span class="material-symbols-rounded">add_box</span> Thêm mới
-            </button>
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc">
-            <button class="btn btn-outline-primary treat-action">
-                <span class="material-symbols-rounded">search</span> Tìm kiếm
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Họ tên</label>
+                    <input type="text" id="patient_name" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tuổi</label>
+                    <input type="number" id="patient_age" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Giới tính</label>
+                    <select id="patient_gender" class="form-select">
+                        <option value="" selected disabled>-- Chọn --</option>
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="text" id="patient_phone" class="form-control">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="showPatientInfo()">
+                Hiển thị thông tin
             </button>
         </div>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header border-bottom-0">
-            <p class="h6 mb-0 d-flex align-items-center">
-                <span class="material-symbols-rounded me-2">list_alt_check</span> Lập hóa đơn thanh toán
-            </p>
+    <!-- DỊCH VỤ -->
+    <div class="row align-items-end mb-4">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Tên dịch vụ</label>
+            <select id="service_name" class="form-select" onchange="updatePrice()">
+                <option disabled selected>-- Chọn dịch vụ --</option>
+                <option value="300000">Khám tổng quát</option>
+                <option value="500000">Lấy cao răng</option>
+                <option value="800000">Trám răng</option>
+                <option value="1500000">Nhổ răng khôn</option>
+            </select>
         </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Chi phí dịch vụ</label>
+            <input id="service_cost" class="form-control" readonly>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Chi phí thuốc</label>
+            <input id="drug_cost" type="number" class="form-control" oninput="updatePrice()">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">VAT (10%)</label>
+            <input id="vat" class="form-control" readonly>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Tổng thanh toán</label>
+            <input id="total_payment" class="form-control" readonly>
+            <button class="btn btn-success mt-2" onclick="addInvoiceRow()">
+                Thêm vào bảng
+            </button>
+        </div>
+    </div>
+
+    <!-- HIỂN THỊ BỆNH NHÂN -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-body" id="patient_info">
+            <p>Chưa có thông tin bệnh nhân.</p>
+        </div>
+    </div>
+
+    <!-- BẢNG HÓA ĐƠN -->
+    <div class="card shadow-sm mt-4">
         <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
+            <table class="table table-striped mb-0">
+                <thead>
                     <tr>
-                        <th style="width: 5%;">STT</th>
-                        <th style="width: 25%;">Tên thuốc</th>
-                        <th style="width: 15%;">Liều dùng</th>
-                        <th style="width: 15%;">Đơn vị</th>
-                        <th style="width: 15%;">Số ngày</th>
-                        <th style="width: 15%;">Ngày kê đơn</th>
-                        <th style="width: 5%;"></th>
+                        <th>STT</th>
+                        <th>Dịch vụ</th>
+                        <th>Chi phí</th>
+                        <th>Thuốc</th>
+                        <th>VAT</th>
+                        <th>Tổng</th>
+                        <th></th>
                     </tr>
-                    </thead>
-                    <tbody>
+                </thead>
+                <tbody id="invoice_body"></tbody>
+                <tfoot>
                     <tr>
-                        <td>1</td>
-                        <td>Paracetamol</td>
-                        <td>2</td>
-                        <td>viên/ngày</td>
-                        <td>5</td>
-                        <td>25/07/2025</td>
-                        <td>
-                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
-                            </button>
-                        </td>
+                        <td colspan="5" class="text-end"><strong>Tổng cộng:</strong></td>
+                        <td id="grand_total"><strong>0 VND</strong></td>
+                        <td></td>
                     </tr>
-                    </tbody>
-                </table>
+                </tfoot>
+            </table>
+
+            <div class="mt-3 text-end p-3">
+                <button class="btn btn-secondary" onclick="showSavedInvoices()">
+                    Xem hóa đơn đã lưu
+                </button>
+                <button class="btn btn-primary" onclick="saveInvoice()">
+                    Lưu hóa đơn
+                </button>
             </div>
         </div>
     </div>
-
-    <nav class="d-flex justify-content-end mt-3">
-        <ul class="pagination pagination-sm mb-0">
-            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">4</a></li>
-            <li class="page-item"><a class="page-link" href="#">5</a></li>
-            <li class="page-item"><a class="page-link" href="#">»</a></li>
-        </ul>
-    </nav>
 </div>
+
+<!-- Modal xem hóa đơn đã lưu -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Hóa đơn đã lưu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- TÌM KIẾM & LỌC -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <input type="text" id="searchInput" class="form-control"
+                   placeholder="Tìm theo tên hoặc SĐT"
+                   oninput="renderInvoices()">
+          </div>
+          <div class="col-md-4">
+            <input type="date" id="filterDate" class="form-control"
+                   onchange="renderInvoices()">
+          </div>
+          <div class="col-md-4">
+            <input type="month" id="filterMonth" class="form-control"
+                   onchange="renderInvoices()">
+          </div>
+        </div>
+
+        <!-- DANH SÁCH -->
+        <div id="saved_invoice_list"></div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Chi tiết hóa đơn -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Hóa đơn chi tiết</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="invoice_detail_content">
+        <!-- JS render -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS -->
+<script src="{{ url_for('static', filename='lab4.js') }}"></script>
+
 </body>
-{%endblock%}
+{% endblock %}
