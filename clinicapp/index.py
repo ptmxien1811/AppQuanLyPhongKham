@@ -4,7 +4,7 @@ from flask import render_template, request, redirect, url_for, flash
 from clinicapp import dao, app, login, admin,db
 import math
 from flask_login import login_user, current_user, logout_user
-from clinicapp.dao import add_medicine_detail, delete_details, add_service_detail
+from clinicapp.dao import add_medicine_detail, delete_details, add_service_detail, add_patient_info
 import cloudinary.uploader
 
 @app.route('/')
@@ -25,6 +25,34 @@ def delete_detail(id,name):
     #chuyen huong ve trng truoc do
     return redirect(request.referrer)
 
+@app.route('/patient_management',methods=['GET', 'POST'])
+def patient_management():
+    q=request.args.get('q')
+    page=request.args.get('page', 1, type=int)
+    pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
+
+    tenbenhnhan=request.form.get('tenbenhnhan')
+    ngaysinh=request.form.get('ngaysinh')
+    gioitinh=request.form.get('gioitinh')
+    sodienthoai=request.form.get('sodienthoai')
+    cancuoc=request.form.get('cancuoc')
+    email=request.form.get('email')
+    diachi=request.form.get('diachi')
+
+    if add_patient_info(tenbenhnhan=tenbenhnhan,
+                        ngaysinh=ngaysinh,
+                        gioitinh=gioitinh,
+                        sodienthoai=sodienthoai,
+                        cancuoc=cancuoc,
+                        email=email,
+                        diachi=diachi):
+
+        print('Them thanh cong!')
+    else:
+        print('Loi khi dua du lieu vao CSDL!')
+
+    patient=dao.load_patient(q=q,page=page)
+    return render_template('pages/patient_management.html',pages=pages,page=page,patient=patient)
 
 @app.route('/cate_id/<int:id>', methods=['GET', 'POST'])
 def create_form(id):
@@ -75,11 +103,11 @@ def create_form(id):
         else:
             print('Loi khi dua du lieu vao CSDL!')
 
-
+        patient=dao.load_patient(q=q,page=page)
         meds = dao.load_medicines(q=q, page=page)
 
 
-        return render_template("pages/tab3.html",meds=meds,pages=pages,today=today_formatted)
+        return render_template("pages/tab3.html",meds=meds,pages=pages,today=today_formatted,patient=patient)
     elif (id==4):
         return render_template("pages/tab4.html")
     else:

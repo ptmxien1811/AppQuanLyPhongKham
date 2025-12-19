@@ -19,6 +19,13 @@ class Base(db.Model):
     def __str__(self):
         return self.name
 
+class Patient(Base):
+    birthday=Column(DateTime,default=datetime.now())
+    sex=Column(String(150),nullable=False)
+    phone_number = Column(String(150),nullable=False)
+    identity_card=Column(String(150),nullable=False)
+    email=Column(String(150),nullable=False)
+    address=Column(String(150),nullable=False)
 
 class User(Base, UserMixin):
     username=Column(String(150),unique=True,nullable=False)
@@ -81,6 +88,12 @@ if __name__ == '__main__':
 
             for t in treatm:
                 db.session.add(TreatmentSheet(**t))
+
+        with open('data/patient.json', encoding='utf-8') as f:
+            patient = json.load(f)
+
+            for p in patient:
+                db.session.add(Patient(**p))
 
         with open('data/services.json', encoding='utf-8') as f:
             serv = json.load(f)

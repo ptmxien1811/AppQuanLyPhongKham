@@ -8,11 +8,34 @@
     </h3>
     <hr>
 
+    <form>
+        <div class="col-md-2 mb-3" style="color:#1E7BD0">
+            <label for="patient_name" class="form-label">Bệnh nhân</label>
+            <input type="text" class="form-control" id="patient_name" placeholder="Chọn bệnh nhân"
+                   name="benhnhan" list="patient_suggestions" onchange="autofillPrice()">
+
+                                <datalist id="patient_suggestions">
+            {% for p in patient %}
+            <option value="{{ p.name }}">
+                {% endfor %}
+
+        </datalist>
+        </div>
+
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <button class="btn btn-outline-primary treat-action" type="submit" value="patient_search">
+                <span class="material-symbols-rounded">search</span> Hiển thị
+            </button>
+        </div>
+    </form>
+    <hr>
+
     <form method="post">
         <div class="row align-items-end mb-4">
+
             <div class="col-md-2 mb-3">
                 <label for="medicine_name" class="form-label">Tên thuốc</label>
-                <input type="text" class="form-control" id="medicine_name" placeholder="Nhập tên thuốc" name="tenthuoc" >
+                <input type="text" class="form-control" id="medicine_name" placeholder="Nhập tên thuốc" name="tenthuoc">
             </div>
             <div class="col-md-2 mb-3">
                 <label for="dosage" class="form-label">Liều dùng</label>
@@ -31,7 +54,7 @@
                 <input type="date" class="form-control" id="prescription_date" value="{{today}}" name="ngaykedon">
             </div>
             <div class="col-md-2 mb-3">
-<!--                name="action" value="add_new"-->
+                <!--                name="action" value="add_new"-->
                 <button class="btn btn-primary me-2 treat-action" type="submit">
                     <span class="material-symbols-rounded">add_box</span> Thêm mới
                 </button>
@@ -80,7 +103,8 @@
                     <td>{{m.number_of_days}}</td>
                     <td>{{m.created_date}}</td>
                     <td>
-                        <form method="POST" action="{{ url_for('delete_detail', id=m.id,name='Medicine') }}" style="display:inline;">
+                        <form method="POST" action="{{ url_for('delete_detail', id=m.id,name='Medicine') }}"
+                              style="display:inline;">
 
                             <input type="hidden" name="action" value="delete_details">
 
@@ -103,7 +127,9 @@
 
         <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
         {% for i in range(1, pages+1)%}
-        <li class="page-item"><a class="page-link" href="{{ url_for('create_form', id=3, page=i, q=request.args.get('q', '')) }}">{{i}}</a></li>
+        <li class="page-item"><a class="page-link"
+                                 href="{{ url_for('create_form', id=3, page=i, q=request.args.get('q', '')) }}">{{i}}</a>
+        </li>
         {%endfor%}
         <li class="page-item"><a class="page-link" href="#">»</a></li>
     </ul>
