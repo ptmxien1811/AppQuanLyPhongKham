@@ -2,7 +2,7 @@ import hashlib
 import json
 
 from clinicapp import app, db
-from models import Category, Medicine, User
+from models import Category, Medicine, User, TreatmentSheet, Services
 
 
 def load_categories():
@@ -19,16 +19,26 @@ def auth_user(username,password):
 
     return User.query.filter(User.username.__eq__(username) and User.password.__eq__(password)).first()
 
+def add_user(name,username,password,avatar):
+    password=hashlib.md5(password.strip().encode("utf-8")).hexdigest()
+    u = User(name=name,username=username.strip(),password=password,avatar=avatar)
+    db.session.add(u)
+    db.session.commit()
 
-def delete_medicine_detail(med_id):
+def delete_details(id,name):
+
+
     try:
-        # 1. Tìm bản ghi dựa trên ID
-        medicine_to_delete = Medicine.query.get(med_id)
+        #  tim ban ghi dua tren ID
+        if (name=='Medicine'):
+            to_delete = Medicine.query.get(id)
+        if (name=='TreatmentSheet'):
+            to_delete = TreatmentSheet.query.get(id)
 
-        if medicine_to_delete:
-            # 2. Xóa bản ghi
-            db.session.delete(medicine_to_delete)
-            # 3. Commit thay đổi
+        if to_delete:
+            # xoa ban ghi
+            db.session.delete(to_delete)
+            # commit
             db.session.commit()
             return True
         else:
@@ -37,6 +47,22 @@ def delete_medicine_detail(med_id):
     except Exception as e:
         db.session.rollback()
         print(f"DAO ERROR (Delete): {e}")  # Rất quan trọng để debug nếu lỗi
+        return False
+
+def add_service_detail(dichvu,dongia,ghichu,ngaylapphieu):
+    new_treatment_detail = TreatmentSheet(
+        name=dichvu,
+        price=dongia,
+        note=ghichu,
+        created_date=ngaylapphieu
+    )
+
+    try:
+        db.session.add(new_treatment_detail)
+        db.session.commit()
+        return True
+    except Exception as e:
+        db.session.rollback()
         return False
 
 
@@ -67,6 +93,25 @@ def get_user_by_id(id):
 def count_medicines():
     return Medicine.query.count()
 
+
+def load_treatmentsheet(q=None,page=None):
+
+    query = TreatmentSheet.query
+
+    if q:
+        query = query.filter(TreatmentSheet.name.contains(q))
+
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)  # ham lay san pham tu diem bat dau cho den diem ket thuc
+
+    return query.all()
+
+def load_services():
+    query=Services.query
+
+    return query.all()
 
 def load_medicines(q=None,page=None):
     # with open('data/medicine.json', encoding='utf-8') as f:

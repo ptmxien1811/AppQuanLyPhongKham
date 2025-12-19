@@ -77,3 +77,36 @@
   'GRAD' 0,
   'opsz' 24;
 }
+<<<<<<< HEAD
+=======
+
+.action-bar {
+    align-items:center;
+}
+
+.treat-action {
+    white-space: nowrap;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    display: flex;
+    height: 37px;
+}
+
+.navbar-nav li:hover a{
+    color:#1E7BD0 !important;
+
+}
+
+.navbar-collapse a:hover{
+        color:#1E7BD0 !important;
+}
+
+.navbar-collapse button a:hover{
+        color:#fff !important;
+}
+
+
+
+
+>>>>>>> 96c082031729cbbece115a45d4a7cd53c48f6017

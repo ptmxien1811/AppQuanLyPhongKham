@@ -1,0 +1,154 @@
+{%extends 'layout/base.html'%}
+
+{%block content%}
+
+
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">list_alt</span> Lập phiếu điều trị
+    </h3>
+    <hr>
+
+    <form method="post">
+        <div class="row align-items-end mb-4">
+            <div class="col-md-2 mb-3">
+                <label for="service_name" class="form-label">Tên dịch vụ</label>
+                <input type="text" class="form-control" id="service_name" placeholder="Chọn dịch vụ"
+                       name="dichvu" list="service_suggestions" onchange="autofillPrice()">
+            </div>
+            <datalist id="service_suggestions">
+                {% for s in serv %}
+                <option value="{{ s.name }}">
+                    {% endfor %}
+
+            </datalist>
+            <div class="col-md-2 mb-3">
+                <label for="price" class="form-label">Đơn giá</label>
+                <input type="text" class="form-control" id="price" placeholder="Đơn giá" name="dongia" selected disabled>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="note" class="form-label">Ghi chú</label>
+                <input type="text" class="form-control" id="note" placeholder="Nhập vào ghi chú" name="ghichu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="prescription_date" class="form-label">Ngày lập phiếu</label>
+                <input type="date" class="form-control" id="prescription_date" value="2025-12-12" name="ngaylapphieu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <!--                name="action" value="add_new"-->
+                <button class="btn btn-primary me-2 treat-action" type="submit">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+            </div>
+    </form>
+    <form>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <input type="text" class="form-control w-50 me-2" placeholder="Tìm kiếm dịch vụ, ghi chú..." name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </form>
+
+</div>
+
+
+<div class="card shadow-sm">
+    <div class="card-header border-bottom-0">
+        <p class="h6 mb-0 d-flex align-items-center">
+            <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách dịch vụ
+        </p>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                <tr>
+                    <th style="width: 5%;">STT</th>
+                    <th style="width: 25%;">Dịch vụ</th>
+                    <th style="width: 15%;">Đơn giá</th>
+                    <th style="width: 15%;">Ghi chú</th>
+                    <th style="width: 15%;">Ngày kê đơn</th>
+                    <th style="width: 3%;">Xóa</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for t in treatm%}
+                <tr>
+                    <td>{{t.id}}</td>
+                    <td>{{t.name}}</td>
+                    <td>{{t.price}}</td>
+                    <td>{{t.note}}</td>
+                    <td>{{t.created_date}}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_detail', id=t.id,name='TreatmentSheet') }}"
+                              style="display:inline;">
+
+                            <input type="hidden" name="action" value="delete_details">
+
+                            <button type="submit" class="btn text-danger p-0" title="Xóa mục kê đơn này"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa mục {{ t.name }} không?');">
+                                <span class="material-symbols-rounded delete">delete</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {%endfor%}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<nav class="d-flex justify-content-end mt-3">
+    <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+        {% for i in range(1, pages+1)%}
+        <li class="page-item"><a class="page-link"
+                                 href="{{ url_for('create_form', id=2, page=i, q=request.args.get('q', '')) }}">{{i}}</a>
+        </li>
+        {%endfor%}
+        <li class="page-item"><a class="page-link" href="#">»</a></li>
+    </ul>
+</nav>
+</body>
+
+<script>
+    console.log("Script đang chạy...");
+
+
+    var serviceData = [
+        {% for s in serv %}
+            {
+                "name": {{ s.name | tojson }},
+                "price": {{ s.price | tojson }}
+            },
+        {% endfor %}
+    ];
+
+    var servicePriceMap = {};
+    serviceData.forEach(function(item) {
+        servicePriceMap[item.name] = item.price;
+    });
+
+    console.log("Dữ liệu đã tải:", servicePriceMap);
+
+    function autofillPrice() {
+        var inputService = document.getElementById('service_name');
+        var inputPrice = document.getElementById('price');
+
+        var selectedName = inputService.value;
+        console.log("Đang chọn:", selectedName);
+
+        if (servicePriceMap.hasOwnProperty(selectedName)) {
+            inputPrice.value = servicePriceMap[selectedName];
+            console.log("Đã tìm thấy giá:", servicePriceMap[selectedName]);
+        } else {
+            inputPrice.value = "";
+            console.log("Không tìm thấy giá cho dịch vụ này.");
+        }
+    }
+</script>
+{%endblock%}
