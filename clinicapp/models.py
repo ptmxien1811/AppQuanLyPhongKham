@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Enum
+from sqlalchemy.orm import relationship
+
 from clinicapp import db, app
 from flask_login import UserMixin
 from enum import Enum as RoleEnum
@@ -27,6 +29,9 @@ class Patient(Base):
     email=Column(String(150),nullable=False)
     address=Column(String(150),nullable=False)
 
+    medicines = relationship('Medicine', backref='patient', lazy=True)
+    treatments = relationship('TreatmentSheet', backref='patient', lazy=True)
+
 class User(Base, UserMixin):
     username=Column(String(150),unique=True,nullable=False)
     password = Column(String(150),nullable=False)
@@ -36,6 +41,8 @@ class User(Base, UserMixin):
 class TreatmentSheet(Base):
     price= Column(String(150),nullable=False)
     note=Column(String(150),nullable=False)
+
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
 
 class Services(Base):
     price = Column(String(150), nullable=False)
@@ -54,11 +61,13 @@ class Medicine(Base):
     unit= Column(String(150),nullable=False)
     number_of_days= Column(Integer, default=0)
 
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+
+
     def __str__(self):
         return self.name
 
 
-# ... (Các Model User, Category, Medicine ở trên) ...
 
 
 

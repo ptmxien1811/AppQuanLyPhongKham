@@ -3,105 +3,461 @@
     "id": 1,
     "name": "Paracetamol 500mg",
     "dosage": 2,
-    "unit": "viên/ngày (sáng, chiều)",
-    "number_of_days": 5
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
   },
   {
     "id": 2,
     "name": "Amoxicillin 500mg",
     "dosage": 2,
-    "unit": "viên/lần x 2 lần/ngày",
-    "number_of_days": 7
+    "unit": "viên/lần",
+    "number_of_days": 7,
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
   },
   {
     "id": 3,
-    "name": "Alphachymotrypsin (Kháng viêm)",
-    "dosage": 1,
-    "unit": "viên/lần x 3 lần/ngày",
-    "number_of_days": 5
+    "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
   },
   {
     "id": 4,
-    "name": "Enterogermina (Men tiêu hóa)",
+    "name": "Vitamin C 500mg",
     "dosage": 1,
-    "unit": "ống/lần x 2 lần/ngày",
-    "number_of_days": 3
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
   },
   {
     "id": 5,
-    "name": "Lactulose (Thuốc táo bón)",
-    "dosage": 15,
-    "unit": "ml/lần x 1 lần/ngày",
-    "number_of_days": 3
+    "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
   },
   {
     "id": 6,
-    "name": "Vitamin C 500mg",
-    "dosage": 1,
-    "unit": "viên/ngày (sau ăn sáng)",
-    "number_of_days": 10
+    "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
   },
   {
     "id": 7,
-    "name": "Panadol Extra",
+    "name": "Efferalgan 500mg",
     "dosage": 1,
-    "unit": "viên/lần (uống khi đau)",
-    "number_of_days": 3
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
   },
   {
     "id": 8,
-    "name": "Berberin (Tiêu chảy)",
-    "dosage": 10,
-    "unit": "viên/ngày (chia 2 lần)",
-    "number_of_days": 5
+    "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
   },
   {
     "id": 9,
-    "name": "Omeprazol 20mg (Dạ dày)",
-    "dosage": 1,
-    "unit": "viên/ngày (trước ăn 30p)",
-    "number_of_days": 14
+    "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
   },
   {
     "id": 10,
-    "name": "Smecta (Thuốc bột)",
-    "dosage": 3,
-    "unit": "gói/ngày (chia 3 lần)",
-    "number_of_days": 3
+    "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
   },
   {
     "id": 11,
-    "name": "Oresol (Bù nước)",
-    "dosage": 2,
-    "unit": "gói/ngày (pha 200ml)",
-    "number_of_days": 2
+    "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
   },
   {
     "id": 12,
-    "name": "Hoạt huyết dưỡng não",
-    "dosage": 4,
-    "unit": "viên/ngày (chia 2 lần)",
-    "number_of_days": 30
+    "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
   },
   {
     "id": 13,
-    "name": "Nước muối sinh lý 0.9%",
-    "dosage": 3,
-    "unit": "lần/ngày (súc họng)",
-    "number_of_days": 7
+    "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 3,
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
   },
   {
     "id": 14,
-    "name": "Gaviscon (Trào ngược)",
+    "name": "Amoxicillin 500mg",
     "dosage": 2,
-    "unit": "gói/ngày (khi đau/sau ăn)",
-    "number_of_days": 7
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
   },
   {
     "id": 15,
-    "name": "Efferalgan 500mg (Sủi)",
+    "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
+  },
+  {
+    "id": 16,
+    "name": "Vitamin C 500mg",
     "dosage": 1,
-    "unit": "viên/lần (sốt > 38.5)",
-    "number_of_days": 3
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 17,
+    "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 18,
+    "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 19,
+    "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 20,
+    "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 21,
+    "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 22,
+    "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00",
+    "active": true
+  },
+  {
+    "id": 23,
+    "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00", "active": true
+  },
+  {
+    "id": 24,
+    "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00", "active": true
+  },
+  {
+    "id": 25,
+    "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 3,
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 26,
+    "name": "Amoxicillin 500mg",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 27,
+    "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 28,
+    "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 29,
+    "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 30, "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 31,
+    "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 32,
+    "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 33, "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 34,
+    "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 35, "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00", "active": true
+  },
+  {
+    "id": 36, "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "patient_id": 12, "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 37,
+    "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 3,
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 38, "name": "Amoxicillin 500mg",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 39, "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 40, "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 41, "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 42, "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 43, "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 44, "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 45, "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 46, "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  },
+  {
+    "id": 47, "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  },
+  {
+    "id": 48, "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
   }
 ]

@@ -6,16 +6,11 @@ from models import Category, Medicine, User, TreatmentSheet, Services, Patient
 
 
 def load_categories():
-    # Doc tu file json
-    # with open('data/category.json', encoding='utf-8') as f:
-    #     cates = json.load(f)
-
     return Category.query.all()
 
 
 def auth_user(username, password):
     password = str(hashlib.md5(password.encode("utf-8")).hexdigest())
-
     return User.query.filter(User.username.__eq__(username) and User.password.__eq__(password)).first()
 
 
@@ -28,7 +23,7 @@ def add_user(name, username, password, avatar):
 
 def delete_details(id, name):
     try:
-        #  tim ban ghi dua tren ID
+        # Tim ban ghi dua tren ID va Ten Model
         if (name == 'Medicine'):
             to_delete = Medicine.query.get(id)
         if (name == 'TreatmentSheet'):
@@ -37,9 +32,7 @@ def delete_details(id, name):
             to_delete = Patient.query.get(id)
 
         if to_delete:
-            # xoa ban ghi
             db.session.delete(to_delete)
-            # commit
             db.session.commit()
             return True
         else:
@@ -47,16 +40,22 @@ def delete_details(id, name):
 
     except Exception as e:
         db.session.rollback()
-        print(f"DAO ERROR (Delete): {e}")  # Rất quan trọng để debug nếu lỗi
+        print(f"DAO ERROR (Delete): {e}")
         return False
 
+def get_patient_by_name(name):
+    if not name:
+        return None
+    return Patient.query.filter(Patient.name == name.strip()).first()
 
-def add_service_detail(dichvu, dongia, ghichu, ngaylapphieu):
+
+def add_service_detail(dichvu, dongia, ghichu, ngaylapphieu, patient_id):
     new_treatment_detail = TreatmentSheet(
         name=dichvu,
         price=dongia,
         note=ghichu,
-        created_date=ngaylapphieu
+        created_date=ngaylapphieu,
+        patient_id=patient_id
     )
 
     try:
@@ -64,6 +63,7 @@ def add_service_detail(dichvu, dongia, ghichu, ngaylapphieu):
         db.session.commit()
         return True
     except Exception as e:
+        print(f"Lỗi thêm phiếu: {e}")
         db.session.rollback()
         return False
 
@@ -71,7 +71,7 @@ def add_service_detail(dichvu, dongia, ghichu, ngaylapphieu):
 def add_patient_info(tenbenhnhan, ngaysinh, gioitinh, sodienthoai, cancuoc, email, diachi):
     new_patient_info = Patient(
         name=tenbenhnhan,
-        phone_number=ngaysinh,
+        phone_number=sodienthoai,
         email=email,
         address=diachi,
         sex=gioitinh,
@@ -84,26 +84,27 @@ def add_patient_info(tenbenhnhan, ngaysinh, gioitinh, sodienthoai, cancuoc, emai
         db.session.commit()
         return True
     except Exception as e:
+        print(f"Lỗi thêm bệnh nhân: {e}")
         db.session.rollback()
         return False
 
 
-def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon):
-    # tao doi tuong moi
+def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon, patient_id):
     new_medicine_detail = Medicine(
         name=tenthuoc,
         dosage=lieudung,
         unit=donvi,
         number_of_days=songay,
-        created_date=ngaykedon
+        created_date=ngaykedon,
+        patient_id=patient_id  # Luu ID benh nhan
     )
 
     try:
-        # add doi tuong vao db sau do commit
         db.session.add(new_medicine_detail)
         db.session.commit()
         return True
     except Exception as e:
+        print(f"Lỗi thêm thuốc: {e}")
         db.session.rollback()
         return False
 
@@ -112,12 +113,34 @@ def get_user_by_id(id):
     return User.query.get(id)
 
 
-def count_medicines():
+def count_medicines(q=None, patient_id=None):
+    query = Medicine.query
+    if patient_id:
+        query = query.filter(Medicine.patient_id == patient_id)
+
+    if q:
+        query = query.filter(Medicine.name.contains(q))
+
     return Medicine.query.count()
 
-
-def load_treatmentsheet(q=None, page=None):
+def count_treatmentsheets(q=None, patient_id=None):
     query = TreatmentSheet.query
+
+    if patient_id:
+        query = query.filter(TreatmentSheet.patient_id == patient_id)
+
+    if q:
+        query = query.filter(TreatmentSheet.name.contains(q))
+
+    return query.count()
+
+
+def load_treatmentsheet(q=None, page=None, patient_id=None):
+    query = TreatmentSheet.query
+
+    # Neu co patient_id thi chi lay phieu cua benh nhan do
+    if patient_id:
+        query = query.filter(TreatmentSheet.patient_id == patient_id)
 
     if q:
         query = query.filter(TreatmentSheet.name.contains(q))
@@ -125,7 +148,7 @@ def load_treatmentsheet(q=None, page=None):
     if page:
         size = app.config["PAGE_SIZE"]
         start = (int(page) - 1) * size
-        query = query.slice(start, start + size)  # ham lay san pham tu diem bat dau cho den diem ket thuc
+        query = query.slice(start, start + size)
 
     return query.all()
 
@@ -139,29 +162,21 @@ def load_patient(q=None, page=None):
     if page:
         size = app.config["PAGE_SIZE"]
         start = (int(page) - 1) * size
-        query = query.slice(start, start + size)  # ham lay san pham tu diem bat dau cho den diem ket thuc
+        query = query.slice(start, start + size)
 
     return query.all()
 
 
 def load_services():
     query = Services.query
-
     return query.all()
 
 
-def load_medicines(q=None, page=None):
-    # with open('data/medicine.json', encoding='utf-8') as f:
-    #     meds = json.load(f)
-    #
-    #     if q:
-    #         meds = [m for m in meds if m["medicine_name"].find(q)>=0]
-    #
-    #     # if cate_id:
-    #     #    prods = [p for p in prods if p["cate_id"].__eq__(int(cate_id))]
-    #     return meds
-
+def load_medicines(q=None, page=None, patient_id=None):
     query = Medicine.query
+
+    if patient_id:
+        query = query.filter(Medicine.patient_id == patient_id)
 
     if q:
         query = query.filter(Medicine.name.contains(q))
@@ -169,20 +184,9 @@ def load_medicines(q=None, page=None):
     if page:
         size = app.config["PAGE_SIZE"]
         start = (int(page) - 1) * size
-        query = query.slice(start, start + size)  # ham lay san pham tu diem bat dau cho den diem ket thuc
+        query = query.slice(start, start + size)
 
     return query.all()
-
-
-# def get_product_by_id(id):
-#         with open('data/medicine.json', encoding='utf-8') as f:
-#             prods = json.load(f)
-#
-#         for p in prods:
-#             if p["id"].__eq__(id):
-#                 return p
-#         #Luu y phai di chuyen return None ra khoi vong lap (ben ngoai vong lap)!
-#         return None
 
 
 if __name__ == '__main__':

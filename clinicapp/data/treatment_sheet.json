@@ -3,90 +3,409 @@
     "id": 1,
     "name": "Trám răng (Composite)",
     "price": "300.000",
-    "note": "Răng sâu nhẹ, trám thẩm mỹ"
+    "note": "Sâu răng nhẹ",
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
   },
   {
     "id": 2,
-    "name": "Nhổ răng sữa",
-    "price": "50.000",
-    "note": "Nhổ răng lung lay cho trẻ em"
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ 6 tháng",
+    "patient_id": 1,
+    "created_date": "2025-01-10 09:00:00",
+    "active": true
   },
   {
     "id": 3,
-    "name": "Nhổ răng vĩnh viễn",
-    "price": "450.000",
-    "note": "Răng sâu nặng không thể bảo tồn"
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra tủy",
+    "patient_id": 1,
+    "created_date": "2025-01-10 09:30:00",
+    "active": true
   },
   {
     "id": 4,
-    "name": "Lấy tủy răng (Nội nha)",
-    "price": "900.000",
-    "note": "Điều trị viêm tủy, chết tủy"
+    "name": "Nhổ răng sữa",
+    "price": "50.000",
+    "note": "Răng lung lay",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
   },
   {
     "id": 5,
-    "name": "Cạo vôi răng (Đánh bóng)",
+    "name": "Cạo vôi răng",
     "price": "250.000",
-    "note": "Làm sạch mảng bám định kỳ"
+    "note": "Định kỳ 6 tháng",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:45:00",
+    "active": true
   },
   {
     "id": 6,
-    "name": "Tẩy trắng răng (Tại phòng)",
-    "price": "1.500.000",
-    "note": "Tẩy trắng bằng công nghệ Laser"
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu răng nhẹ",
+    "patient_id": 2,
+    "created_date": "2025-01-11 10:15:00",
+    "active": true
   },
   {
     "id": 7,
-    "name": "Tiểu phẫu răng khôn (Mọc thẳng)",
-    "price": "1.000.000",
-    "note": "Nhổ răng số 8 hàm trên/dưới"
+    "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Mọc lệch 90 độ",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
   },
   {
     "id": 8,
-    "name": "Phẫu thuật răng khôn (Mọc lệch)",
-    "price": "2.500.000",
-    "note": "Ca khó, cần cắt nướu/chia chân răng"
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra trước nhổ",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:30:00",
+    "active": true
   },
   {
     "id": 9,
-    "name": "Bọc răng sứ Kim loại (Titan)",
-    "price": "2.000.000",
-    "note": "Bảo hành 5 năm"
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh trước nhổ",
+    "patient_id": 3,
+    "created_date": "2025-01-12 11:00:00",
+    "active": true
   },
   {
     "id": 10,
-    "name": "Bọc răng sứ Toàn sứ (Cercon)",
-    "price": "5.500.000",
-    "note": "Thẩm mỹ cao, không đen viền nướu"
+    "name": "Tẩy trắng răng",
+    "price": "1.500.000",
+    "note": "Công nghệ Laser",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
   },
   {
     "id": 11,
-    "name": "Dán sứ Veneer",
-    "price": "6.000.000",
-    "note": "Mặt dán sứ siêu mỏng, mài ít răng"
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh trước tẩy",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:50:00",
+    "active": true
   },
   {
     "id": 12,
-    "name": "Chụp X-quang Panorex",
-    "price": "150.000",
-    "note": "Chụp toàn hàm để chẩn đoán"
+    "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Sứ Titan",
+    "patient_id": 4,
+    "created_date": "2025-01-13 15:20:00",
+    "active": true
   },
   {
     "id": 13,
-    "name": "Niềng răng mắc cài kim loại",
-    "price": "25.000.000",
-    "note": "Trọn gói 2 hàm (Chỉnh nha)"
+    "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Viêm tủy cấp",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
   },
   {
     "id": 14,
-    "name": "Cấy ghép Implant (Hàn Quốc)",
-    "price": "14.000.000",
-    "note": "Bao gồm trụ và mão sứ"
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra tủy",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:30:00",
+    "active": true
   },
   {
     "id": 15,
-    "name": "Điều trị viêm nướu/Nha chu",
-    "price": "500.000",
-    "note": "Vệ sinh sâu túi nướu, bôi thuốc"
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Trám bít ống tủy",
+    "patient_id": 5,
+    "created_date": "2025-01-14 09:00:00",
+    "active": true
+  },
+  {
+    "id": 16,
+    "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Mọc ngầm",
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 17,
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Panorama",
+    "patient_id": 6,
+    "created_date": "2025-01-15 16:00:00",
+    "active": true
+  },
+  {
+    "id": 18,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ",
+    "patient_id": 6,
+    "created_date": "2025-01-15 16:30:00",
+    "active": true
+  },
+  {
+    "id": 19,
+    "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Răng cửa",
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 20,
+    "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Răng số 6",
+    "patient_id": 7,
+    "created_date": "2025-01-16 10:15:00",
+    "active": true
+  },
+  {
+    "id": 21,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Răng số 7",
+    "patient_id": 7,
+    "created_date": "2025-01-16 10:45:00",
+    "active": true
+  },
+  {
+    "id": 22,
+    "name": "Tẩy trắng răng",
+    "price": "1.500.000",
+    "note": "Tại phòng khám",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00",
+    "active": true
+  },
+  {
+    "id": 23,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Đánh bóng",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:40:00",
+    "active": true
+  },
+  {
+    "id": 24,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Mòn cổ chân răng",
+    "patient_id": 8,
+    "created_date": "2025-01-17 12:10:00",
+    "active": true
+  },
+  {
+    "id": 25,
+    "name": "Nhổ răng sữa",
+    "price": "50.000",
+    "note": "Răng lung lay",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 26, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu răng hàm",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:30:00",
+    "active": true
+  },
+  {
+    "id": 27, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 9,
+    "created_date": "2025-01-18 14:00:00",
+    "active": true
+  },
+  {
+    "id": 28, "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Răng số 5",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 29, "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:50:00",
+    "active": true
+  },
+  {
+    "id": 30, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Hoàn tất điều trị tủy",
+    "patient_id": 10,
+    "created_date": "2025-01-19 17:20:00",
+    "active": true
+  },
+  {
+    "id": 31, "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Hàm dưới trái",
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 32, "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Panorama",
+    "patient_id": 11,
+    "created_date": "2025-01-20 09:15:00",
+    "active": true
+  },
+  {
+    "id": 33, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 11,
+    "created_date": "2025-01-20 09:45:00",
+    "active": true
+  },
+  {
+    "id": 34, "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Răng hàm",
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 35, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Răng kế bên",
+    "patient_id": 12,
+    "created_date": "2025-01-21 11:00:00",
+    "active": true
+  },
+  {
+    "id": 36, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ",
+    "patient_id": 12,
+    "created_date": "2025-01-21 11:30:00",
+    "active": true
+  },
+  {
+    "id": 37, "name": "Tẩy trắng răng",
+    "price": "1.500.000",
+    "note": "Laser Whitening",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 38, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Làm sạch",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:30:00",
+    "active": true
+  },
+  {
+    "id": 39, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu nhẹ",
+    "patient_id": 13,
+    "created_date": "2025-01-22 15:00:00",
+    "active": true
+  },
+  {
+    "id": 40, "name": "Nhổ răng sữa",
+    "price": "50.000",
+    "note": "Răng cửa",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 41, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Răng hàm",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:45:00",
+    "active": true
+  },
+  {
+    "id": 42, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ",
+    "patient_id": 14,
+    "created_date": "2025-01-23 10:15:00",
+    "active": true
+  },
+  {
+    "id": 43, "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Răng số 7",
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 44, "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Sau chữa tủy",
+    "patient_id": 15,
+    "created_date": "2025-01-24 17:15:00",
+    "active": true
+  },
+  {
+    "id": 45, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 15,
+    "created_date": "2025-01-24 17:45:00",
+    "active": true
+  },
+  {
+    "id": 46, "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Hàm trên phải",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  },
+  {
+    "id": 47, "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Panorama",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:50:00",
+    "active": true
+  },
+  {
+    "id": 48, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 16,
+    "created_date": "2025-01-25 12:20:00",
+    "active": true
   }
 ]
