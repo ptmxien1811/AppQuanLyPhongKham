@@ -1,6 +1,6 @@
 import json
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Enum
+from datetime import datetime, date
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Enum, column, Date
 from sqlalchemy.orm import relationship
 
 from clinicapp import db, app
@@ -22,7 +22,7 @@ class Base(db.Model):
         return self.name
 
 class Patient(Base):
-    birthday=Column(DateTime,default=datetime.now())
+    birthday=Column(Date)
     sex=Column(String(150),nullable=False)
     phone_number = Column(String(150),nullable=False)
     identity_card=Column(String(150),nullable=False)
@@ -55,11 +55,17 @@ class Category(Base):
     def __str__(self):
         return self.name
 
+class MedicineCategory(Base):
+    price = Column(String(150), nullable=False)
+    unit = Column(String(150),nullable=False)
+
 class Medicine(Base):
     name = Column(String(150), nullable=False)
     dosage= Column(Integer,default=0)
     unit= Column(String(150),nullable=False)
     number_of_days= Column(Integer, default=0)
+    price = Column(String(150), nullable=False)
+
 
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
 
@@ -91,6 +97,12 @@ if __name__ == '__main__':
 
             for m in meds:
                 db.session.add(Medicine(**m))
+
+        with open('data/medicine_category.json', encoding='utf-8') as f:
+            meds = json.load(f)
+
+            for m in meds:
+                db.session.add(MedicineCategory(**m))
 
         with open('data/treatment_sheet.json', encoding='utf-8') as f:
             treatm = json.load(f)

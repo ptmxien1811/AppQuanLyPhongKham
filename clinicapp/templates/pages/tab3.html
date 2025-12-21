@@ -10,16 +10,16 @@
 
     <form method="GET">
         <div class="row mb-3">
-            <div class="col-md-3" style="color:#1E7BD0">
+            <div class="col-md-2" style="color:#1E7BD0">
                 <label for="patient_select" class="form-label">Chọn Bệnh nhân</label>
 
                 <select class="form-select" id="patient_select" name="benhnhan">
-                    <option value="" disabled selected>-- Vui lòng chọn bệnh nhân --</option>
+                    <option value="" disabled selected>-- Chọn bệnh nhân --</option>
                     {% for p in patient %}
-                        <option value="{{ p.name }}"
-                                {% if selected_patient and selected_patient.id == p.id %}selected{% endif %}>
-                            {{ p.name }} - {{ p.phone_number }}
-                        </option>
+                    <option value="{{ p.name }}"
+                            {% if selected_patient and selected_patient.id== p.id %}selected{% endif %}>
+                        {{ p.name }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -46,24 +46,35 @@
 
         <div class="row align-items-end mb-4">
             <div class="col-md-2 mb-3">
-                <label class="form-label">Tên thuốc</label>
-                <input type="text" class="form-control" placeholder="Nhập tên thuốc" name="tenthuoc" required>
+                <label for="medicine_name" class="form-label">Tên thuốc</label>
+                <input type="text" class="form-control" id="medicine_name" placeholder="Chọn thuốc"
+                       name="tenthuoc" list="service_suggestions" onchange="autofillUnitAndPrice()">
+                <input type="hidden" id="unit_price_hidden">
             </div>
+            <datalist id="service_suggestions">
+                {% for m in meds_cate %}
+                <option value="{{ m.name }}">
+                    {% endfor %}
+            </datalist>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Liều dùng</label>
-                <input type="text" class="form-control" placeholder="Nhập liều dùng" name="lieudung">
+                <input type="number" class="form-control" id="dosage" placeholder="Nhập liều dùng" name="lieudung" onchange="calculateTotal()">
             </div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Đơn vị</label>
-                <input type="text" class="form-control" placeholder="Nhập đơn vị" name="donvi">
+                <input type="text" class="form-control" id="unit" placeholder="Nhập đơn vị" name="donvi" readonly>
             </div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Số ngày</label>
-                <input type="number" class="form-control" placeholder="Số ngày" name="songay">
+                <input type="number" class="form-control" id="days" placeholder="Số ngày" name="songay" onchange="calculateTotal()">
             </div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Ngày kê đơn</label>
                 <input type="date" class="form-control" value="{{today}}" name="ngaykedon">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Chi phí</label>
+                <input type="text" class="form-control" id="total_cost" name="chiphi" readonly placeholder="0">
             </div>
             <div class="col-md-2 mb-3">
                 <button class="btn btn-primary me-2 treat-action w-100" type="submit">
@@ -81,7 +92,6 @@
             </button>
         </div>
     </form>
-
 
 
     {% else %}
@@ -107,7 +117,8 @@
                         <th>Liều dùng</th>
                         <th>Đơn vị</th>
                         <th>Số ngày</th>
-                        <th>Ngày kê</th>
+                        <th>Ngày kê đơn</th>
+                        <th>Chi phí</th>
                         <th>Xóa</th>
                     </tr>
                     </thead>
@@ -120,10 +131,13 @@
                         <td>{{m.unit}}</td>
                         <td>{{m.number_of_days}}</td>
                         <td>{{m.created_date}}</td>
+                        <td>{{m.price}}</td>
                         <td>
-                            <form method="POST" action="{{ url_for('delete_detail', id=m.id, name='Medicine') }}" style="display:inline;">
+                            <form method="POST" action="{{ url_for('delete_detail', id=m.id, name='Medicine') }}"
+                                  style="display:inline;">
                                 <input type="hidden" name="action" value="delete_details">
-                                <button type="submit" class="btn text-danger p-0" onclick="return confirm('Xóa thuốc này?');">
+                                <button type="submit" class="btn text-danger p-0"
+                                        onclick="return confirm('Xóa thuốc này?');">
                                     <span class="material-symbols-rounded">delete</span>
                                 </button>
                             </form>
@@ -147,7 +161,7 @@
             <li class="page-item">
                 <a class="page-link"
                    href="{{ url_for('create_form', id=3, page=i, q=request.args.get('q', ''), benhnhan=selected_patient.name if selected_patient else '') }}">
-                   {{i}}
+                    {{i}}
                 </a>
             </li>
             {%endfor%}
@@ -157,4 +171,59 @@
 
 </div>
 </body>
+
+<script>
+    console.log("Script autofill & calculation đang chạy...");
+
+    var medicineData = [
+        {% if meds_cate %}
+            {% for m in meds_cate %}
+                {
+                    "name": {{ m.name | tojson }},
+                    "unit": {{ m.unit | tojson }},
+                    "price": {{ m.price | tojson }}
+                },
+            {% endfor %}
+        {% endif %}
+    ];
+
+    var medicineInfoMap = {};
+    medicineData.forEach(function(item) {
+        medicineInfoMap[item.name] = {
+            unit: item.unit,
+            price: parseFloat(item.price)
+        };
+    });
+
+    function autofillUnitAndPrice() {
+        var inputService = document.getElementById('medicine_name');
+        var inputUnit = document.getElementById('unit');
+        var hiddenPrice = document.getElementById('unit_price_hidden');
+
+        var selectedName = inputService.value;
+
+        if (medicineInfoMap.hasOwnProperty(selectedName)) {
+            inputUnit.value = medicineInfoMap[selectedName].unit;
+            hiddenPrice.value = medicineInfoMap[selectedName].price;
+
+            calculateTotal();
+        } else {
+            inputUnit.value = "";
+            hiddenPrice.value = 0;
+            calculateTotal();
+        }
+    }
+
+    function calculateTotal() {
+        var unitPrice = parseFloat(document.getElementById('unit_price_hidden').value) || 0;
+        var dosage = parseFloat(document.getElementById('dosage').value) || 0;
+        var days = parseFloat(document.getElementById('days').value) || 0;
+        var outputCost = document.getElementById('total_cost');
+
+        var total = unitPrice * dosage * days*1000;
+
+        outputCost.value = total;
+    }
+</script>
+
 {%endblock%}

@@ -28,7 +28,8 @@ def patient_management():
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
-    pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
+
+    pages = math.ceil(dao.count_patients() / app.config["PAGE_SIZE"])
 
     if request.method == 'POST':
         tenbenhnhan = request.form.get('tenbenhnhan')
@@ -87,32 +88,31 @@ def create_form(id):
             else:
                 print('Chua chon benh nhan!')
 
+        today = date.today()
+        today_formatted = today.strftime('%Y-%m-%d')
+
         p_id = selected_patient.id if selected_patient else None
 
         all_patients = dao.load_patient(page=None)
-
         treatm = dao.load_treatmentsheet(q=q, page=page, patient_id=p_id)
         serv = dao.load_services()
-
         total_sheets = dao.count_treatmentsheets(q=q, patient_id=p_id)
         pages = math.ceil(total_sheets / app.config["PAGE_SIZE"])
 
         return render_template("pages/tab1.html", treatm=treatm, q=q, pages=pages,
-                               serv=serv, patient=all_patients, selected_patient=selected_patient)
+                               serv=serv, patient=all_patients, selected_patient=selected_patient,today=today_formatted)
 
     elif (id == 1):
         return render_template("pages/tab2.html")
 
     elif (id == 3):
-        today = date.today()
-        today_formatted = today.strftime('%Y-%m-%d')
-
         if request.method == 'POST' and 'tenthuoc' in request.form:
             tenthuoc = request.form.get('tenthuoc')
             lieudung = request.form.get('lieudung')
             donvi = request.form.get('donvi')
             songay = request.form.get('songay')
             ngaykedon = request.form.get('ngaykedon')
+            chiphi = request.form.get('chiphi')
 
             # Lay ID benh nhan tu input an
             patient_id_hidden = request.form.get('patient_id_hidden')
@@ -123,22 +123,27 @@ def create_form(id):
                                        donvi=donvi,
                                        songay=songay,
                                        ngaykedon=ngaykedon,
-                                       patient_id=patient_id_hidden):
+                                       patient_id=patient_id_hidden,
+                                       chiphi=chiphi):
                     print('Them thuoc thanh cong!')
                 else:
                     print('Loi khi them thuoc!')
             else:
                 print('Chua chon benh nhan!')
 
+        today = date.today()
+        today_formatted = today.strftime('%Y-%m-%d')
+
         p_id = selected_patient.id if selected_patient else None
 
         all_patients = dao.load_patient(page=None)
-
+        meds_cate=dao.load_medicine_category()
         meds = dao.load_medicines(q=q, page=page, patient_id=p_id)
-        pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
+        total_meds = dao.count_medicines(q=q, patient_id=p_id)
+        pages = math.ceil(total_meds / app.config["PAGE_SIZE"])
 
         return render_template("pages/tab3.html", meds=meds, pages=pages,
-                               today=today_formatted, patient=all_patients, selected_patient=selected_patient)
+                               today=today_formatted, patient=all_patients, selected_patient=selected_patient,meds_cate=meds_cate)
 
     elif (id == 4):
         return render_template("pages/tab4.html")

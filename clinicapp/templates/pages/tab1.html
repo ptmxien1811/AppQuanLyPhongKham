@@ -10,17 +10,17 @@
 
     <form method="GET">
         <div class="row mb-3">
-            <div class="col-md-3" style="color:#1E7BD0">
+            <div class="col-md-2" style="color:#1E7BD0">
                 <label for="patient_select" class="form-label">Chọn Bệnh nhân</label>
 
                 <select class="form-select" id="patient_select" name="benhnhan">
-                    <option value="" disabled {% if not selected_patient %}selected{% endif %}>-- Vui lòng chọn bệnh
+                    <option value="" disabled {% if not selected_patient %}selected{% endif %}>-- Chọn bệnh
                         nhân --
                     </option>
                     {% for p in patient %}
                     <option value="{{ p.name }}"
                             {% if selected_patient and selected_patient.id== p.id %}selected{% endif %}>
-                        {{ p.name }} - {{ p.phone_number }}
+                        {{ p.name }}
                     </option>
                     {% endfor %}
                 </select>
@@ -68,7 +68,7 @@
             </div>
             <div class="col-md-2 mb-3">
                 <label for="prescription_date" class="form-label">Ngày lập phiếu</label>
-                <input type="date" class="form-control" id="prescription_date" value="2025-12-12" name="ngaylapphieu">
+                <input type="date" class="form-control" id="prescription_date" value="{{today}}" name="ngaylapphieu">
             </div>
             <div class="col-md-2 mb-3">
                 <button class="btn btn-primary me-2 treat-action w-100" type="submit">

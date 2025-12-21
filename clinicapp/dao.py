@@ -2,7 +2,7 @@ import hashlib
 import json
 
 from clinicapp import app, db
-from models import Category, Medicine, User, TreatmentSheet, Services, Patient
+from models import Category, Medicine, User, TreatmentSheet, Services, Patient, MedicineCategory
 
 
 def load_categories():
@@ -89,14 +89,15 @@ def add_patient_info(tenbenhnhan, ngaysinh, gioitinh, sodienthoai, cancuoc, emai
         return False
 
 
-def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon, patient_id):
+def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon, patient_id,chiphi):
     new_medicine_detail = Medicine(
         name=tenthuoc,
         dosage=lieudung,
         unit=donvi,
         number_of_days=songay,
         created_date=ngaykedon,
-        patient_id=patient_id  # Luu ID benh nhan
+        patient_id=patient_id,
+        price=chiphi# Luu ID benh nhan
     )
 
     try:
@@ -121,7 +122,17 @@ def count_medicines(q=None, patient_id=None):
     if q:
         query = query.filter(Medicine.name.contains(q))
 
-    return Medicine.query.count()
+    return query.count()
+
+def count_patients(q=None, patient_id=None):
+    query = Patient.query
+    if patient_id:
+        query = query.filter(Patient.patient_id == patient_id)
+
+    if q:
+        query=query.filter(Patient.name.contains(q))
+
+    return query.count()
 
 def count_treatmentsheets(q=None, patient_id=None):
     query = TreatmentSheet.query
@@ -171,6 +182,9 @@ def load_services():
     query = Services.query
     return query.all()
 
+def load_medicine_category():
+    query = MedicineCategory.query
+    return query.all()
 
 def load_medicines(q=None, page=None, patient_id=None):
     query = Medicine.query
