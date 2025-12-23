@@ -5,7 +5,7 @@ import math
 from flask_login import login_user, current_user, logout_user
 from clinicapp.dao import add_medicine_detail, delete_details, add_service_detail, add_patient_info
 import cloudinary.uploader
-
+from types import SimpleNamespace
 
 @app.route('/')
 def index():
@@ -145,9 +145,37 @@ def create_form(id):
         return render_template("pages/tab3.html", meds=meds, pages=pages,
                                today=today_formatted, patient=all_patients, selected_patient=selected_patient,meds_cate=meds_cate)
 
-    elif (id == 4):
-        return render_template("pages/tab4.html")
+
+
+    elif id == 4:
+        all_patients = dao.load_patient(page=None)
+        doctors = dao.load_doctors()  # thêm dòng này
+
+        p_id = selected_patient.id if selected_patient else None
+        services = dao.load_treatmentsheet(patient_id=p_id) if p_id else []
+        medicines = dao.load_medicines(patient_id=p_id) if p_id else []
+
+        total_service = sum(float(s.price) for s in services)
+        total_medicine = sum(float(m.price) for m in medicines)
+        sub_total = total_service + total_medicine
+        vat = sub_total * 0.1
+        total_payment = sub_total + vat
+
+        return render_template(
+            "pages/tab4.html",
+            patient=all_patients,
+            doctors=doctors,  # truyền vào template
+            selected_patient=selected_patient,
+            services=services,
+            medicines=medicines,
+            total_service=total_service,
+            total_medicine=total_medicine,
+            vat=vat,
+            total_payment=total_payment
+        )
+
     else:
+
         return render_template("pages/tab5.html")
 
 
@@ -217,6 +245,117 @@ def common_attribute():
 @login.user_loader
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
+
+# Hàm chuyển đổi chuỗi tiền tệ sang float an toàn
+def to_float(v):
+    if v is None:
+        return 0
+    v = str(v).strip()
+    # bỏ dấu chấm ngăn cách hàng nghìn
+    v = v.replace('.', '')
+    # nếu có dấu phẩy thì đổi thành dấu chấm (trường hợp số thập phân)
+    v = v.replace(',', '.')
+    try:
+        return float(v)
+    except ValueError:
+        return 0
+
+@app.route('/cate_id/4', methods=['GET', 'POST'])
+def invoice_page():
+    # Danh sách bệnh nhân và bác sĩ
+    patients = dao.load_patient(page=None)
+    doctors = dao.load_doctors()
+
+    # Lấy dữ liệu từ form/URL
+    patient_id = request.args.get('patient_id')
+    doctor_id = request.form.get('doctor_id')
+    created_date = request.form.get('created_date') or date.today()
+
+    # Lấy thông tin bệnh nhân, dịch vụ, thuốc
+    selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
+    services = dao.load_treatmentsheet(patient_id=patient_id) if patient_id else []
+    medicines = dao.load_medicines(patient_id=patient_id) if patient_id else []
+
+    # Tính toán tổng tiền (dùng to_float để tránh lỗi)
+    total_service = sum(to_float(s.price) for s in services)
+    total_medicine = sum(to_float(m.price) for m in medicines)
+    vat = (total_service + total_medicine) * 0.1
+    total_payment = total_service + total_medicine + vat
+
+    # Nếu POST thì lưu hóa đơn
+    if request.method == 'POST' and patient_id and doctor_id:
+        dao.add_invoice(patient_id, doctor_id,
+                        total_service, total_medicine,
+                        vat, total_payment, created_date)
+        flash("Hóa đơn đã được lưu thành công!", "success")
+        return redirect(url_for('invoice_list'))
+
+    # Tạo đối tượng invoice để template dễ dùng
+    invoice = None
+    if selected_patient:
+        invoice = SimpleNamespace(
+            patient=selected_patient,
+            services=services,
+            medicines=medicines,
+            total_service=total_service,
+            total_medicine=total_medicine,
+            vat=vat,
+            total_payment=total_payment,
+            created_date=created_date
+        )
+
+    return render_template("pages/tab4.html",
+                           patients=patients,
+                           doctors=doctors,
+                           invoice=invoice,
+                           selected_doctor=dao.get_doctor_by_id(doctor_id) if doctor_id else None,
+                           today=date.today())
+
+
+@app.route('/invoices')
+def invoice_list():
+    keyword = request.args.get('keyword')
+    invoices = dao.load_invoices(keyword)
+    return render_template("pages/invoice_list.html", invoices=invoices)
+@app.route('/invoice/edit/<int:invoice_id>', methods=['GET', 'POST'])
+def edit_invoice(invoice_id):
+    invoice = dao.get_invoice_by_id(invoice_id)
+    doctors = dao.load_doctors()
+    if request.method == 'POST':
+        doctor_id = request.form.get('doctor_id')
+        dao.update_invoice(invoice_id, doctor_id=doctor_id)
+        flash("Hóa đơn đã được cập nhật!", "info")
+        return redirect(url_for('invoice_list'))
+    return render_template("pages/edit_invoice.html", invoice=invoice, doctors=doctors)
+@app.route('/invoice/delete/<int:invoice_id>', methods=['POST'])
+def delete_invoice(invoice_id):
+    if dao.delete_invoice(invoice_id):
+        flash("Đã xóa hóa đơn!", "danger")
+    else:
+        flash("Lỗi khi xóa hóa đơn!", "warning")
+    return redirect(url_for('invoice_list'))
+
+
+@app.route('/doctor_management', methods=['GET', 'POST'])
+def doctor_management():
+    q = request.args.get('q')
+    page = request.args.get('page', 1, type=int)
+
+    pages = math.ceil(dao.count_doctors(q=q) / app.config["PAGE_SIZE"])
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        specialty = request.form.get('specialty')
+        phone_number = request.form.get('phone_number')
+        email = request.form.get('email')
+
+        if dao.add_doctor(name=name, specialty=specialty, phone_number=phone_number, email=email):
+            flash("Thêm bác sĩ thành công!", "success")
+        else:
+            flash("Lỗi khi thêm bác sĩ!", "danger")
+
+    doctors = dao.load_doctors(q=q, page=page)
+    return render_template('pages/doctor_management.html', pages=pages, page=page, doctors=doctors)
 
 
 if __name__ == '__main__':

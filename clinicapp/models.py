@@ -2,10 +2,10 @@ import json
 from datetime import datetime, date
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Enum, column, Date
 from sqlalchemy.orm import relationship
-
 from clinicapp import db, app
 from flask_login import UserMixin
 from enum import Enum as RoleEnum
+
 
 
 class UserEnum(RoleEnum):
@@ -74,6 +74,34 @@ class Medicine(Base):
         return self.name
 
 
+class Doctor(Base):
+    __tablename__ = 'doctor'
+    specialty = Column(String(150), nullable=True)
+    phone_number = Column(String(50), nullable=True)
+    email = Column(String(100), nullable=True)
+
+    invoices = relationship('Invoice', backref='doctor', lazy=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Invoice(Base):
+    __tablename__ = 'invoice'
+    created_date = Column(Date, default=date.today)
+
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+    doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
+
+    total_service = Column(Integer, default=0)
+    total_medicine = Column(Integer, default=0)
+    vat = Column(Integer, default=0)
+    total_payment = Column(Integer, default=0)
+
+    patient = relationship('Patient', backref='invoices', lazy=True)
+
+    def __str__(self):
+        return f"Invoice #{self.id} - {self.patient.name}"
 
 
 
@@ -133,7 +161,5 @@ if __name__ == '__main__':
         db.session.add(u)
 
         # chay lenh, (phai chay moi cap nhat trong database, tuong tu nhu execute)
-
-
 
         db.session.commit()
