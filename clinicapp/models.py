@@ -159,6 +159,9 @@ if __name__ == '__main__':
         u = User(name="User",username="user",password=str(hashlib.md5("123".encode("utf-8")).hexdigest()))
 
         db.session.add(u)
+        u1 = User(name="Admin",username="admin",password=str(hashlib.md5("123".encode("utf-8")).hexdigest()),role=UserEnum.ADMIN)
+
+        db.session.add(u1)
 
         # chay lenh, (phai chay moi cap nhat trong database, tuong tu nhu execute)
 
