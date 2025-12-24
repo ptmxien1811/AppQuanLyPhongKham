@@ -7,13 +7,39 @@
         </button>
         <div class="collapse navbar-collapse" id="mynavbar">
             <ul class="navbar-nav me-auto">
-                {%for c in cates%}
+                {% for c in cates %}
+                {% if current_user.is_authenticated %}
+
+                {% if current_user.role.name == 'ADMIN' %}
                 <li class="nav-item me-5">
                     <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
                         <span class="material-symbols-rounded me-1">{{c.icon}}</span>
-                        {{c.name}}</a>
+                        {{c.name}}
+                    </a>
                 </li>
-                {%endfor%}
+
+                {% elif current_user.role.name == 'USER' %}
+                {% if c.id == 1 or c.id == 4 %}
+                <li class="nav-item me-5">
+                    <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
+                        <span class="material-symbols-rounded me-1">{{c.icon}}</span>
+                        {{c.name}}
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+
+                {% else %}
+                {% if c.id == 1 %}
+                <li class="nav-item me-5">
+                    <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
+                        <span class="material-symbols-rounded me-1">{{c.icon}}</span>
+                        {{c.name}}
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+                {% endfor %}
             </ul>
             <a href="/" class="text-dark me-2"><span class="material-symbols-rounded me-1">settings</span> </a>
             <a href="/" class="text-dark me-2"> <span class="material-symbols-rounded me-1">notifications</span></i></a>
@@ -26,9 +52,9 @@
 
             {%else%}
             <button class="me-2 login"><a href="/login">Đăng nhập</a>
-                            <button class="me-2 login"><a href="/register">Đăng ký</a>
-                {%endif%}
-            </button>
+                <button class="me-2 login"><a href="/register">Đăng ký</a>
+                    {%endif%}
+                </button>
         </div>
     </div>
 </nav>

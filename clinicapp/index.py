@@ -7,6 +7,9 @@ from clinicapp.dao import add_medicine_detail, delete_details, add_service_detai
 import cloudinary.uploader
 from types import SimpleNamespace
 
+from models import UserEnum
+
+
 @app.route('/')
 def index():
     pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
@@ -25,6 +28,10 @@ def delete_detail(id, name):
 
 @app.route('/patient_management', methods=['GET', 'POST'])
 def patient_management():
+    if not current_user.is_authenticated or current_user.role != UserEnum.ADMIN:
+        flash("Bạn không có quyền truy cập trang này!", "danger")
+        return redirect('/')
+
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
@@ -57,6 +64,15 @@ def patient_management():
 
 @app.route('/cate_id/<int:id>', methods=['GET', 'POST'])
 def create_form(id):
+    if not current_user.is_authenticated:
+        return redirect('/login')
+
+    allowed_for_user = [1, 4]
+
+    if current_user.role == UserEnum.USER and id not in allowed_for_user:
+        flash("Bạn không có quyền truy cập chức năng này!", "danger")
+        return redirect('/')
+
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
@@ -338,6 +354,10 @@ def delete_invoice(invoice_id):
 
 @app.route('/doctor_management', methods=['GET', 'POST'])
 def doctor_management():
+    if not current_user.is_authenticated or current_user.role != UserEnum.ADMIN:
+        flash("Bạn không có quyền truy cập trang này!", "danger")
+        return redirect('/')
+
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
