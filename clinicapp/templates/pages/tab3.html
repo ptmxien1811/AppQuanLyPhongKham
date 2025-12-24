@@ -45,17 +45,18 @@
         <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
 
         <div class="row align-items-end mb-4">
-            <div class="col-md-2 mb-3">
-                <label for="medicine_name" class="form-label">Tên thuốc</label>
-                <input type="text" class="form-control" id="medicine_name" placeholder="Chọn thuốc"
-                       name="tenthuoc" list="service_suggestions" onchange="autofillUnitAndPrice()">
-                <input type="hidden" id="unit_price_hidden">
-            </div>
-            <datalist id="service_suggestions">
-                {% for m in meds_cate %}
-                <option value="{{ m.name }}">
-                    {% endfor %}
-            </datalist>
+<div class="col-md-2 mb-3">
+    <label for="medicine_name" class="form-label">Tên thuốc</label>
+
+    <select class="form-select" id="medicine_name" name="tenthuoc" onchange="autofillUnitAndPrice()">
+        <option value="" disabled selected>-- Chọn thuốc --</option>
+        {% for m in meds_cate %}
+            <option value="{{ m.name }}">{{ m.name }}</option>
+        {% endfor %}
+    </select>
+
+    <input type="hidden" id="unit_price_hidden">
+</div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Liều dùng</label>
                 <input type="number" class="form-control" id="dosage" placeholder="Nhập liều dùng" name="lieudung" onchange="calculateTotal()">

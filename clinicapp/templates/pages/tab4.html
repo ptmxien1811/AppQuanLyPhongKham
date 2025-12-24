@@ -1,12 +1,15 @@
 {% extends 'layout/base.html' %}
 
 {% block content %}
+<body style="background-color: #D5E1E6">
+
+<div class="treatment-form-wrapper p-4">
 <div class="container mt-4">
 
     <!-- TIÊU ĐỀ -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-primary">
-            <i class="bi bi-receipt"></i> LẬP HÓA ĐƠN THANH TOÁN
+        <h4 class="mb-4 d-flex align-items-center">
+             <span class="material-symbols-rounded me-2 " style="font-size:30px">receipt_long</span> LẬP HÓA ĐƠN THANH TOÁN
         </h4>
         <div>
             <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
@@ -21,13 +24,13 @@
             <form method="get">
                 <label class="form-label fw-semibold">Chọn bệnh nhân</label>
                 <div class="row g-2 align-items-center">
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <select name="patient_id" class="form-select" required>
                             <option disabled selected>-- Chọn bệnh nhân --</option>
                             {% for p in patients %}
                                 <option value="{{ p.id }}"
                                     {% if invoice and invoice.patient.id == p.id %}selected{% endif %}>
-                                    {{ p.name }} - {{ p.phone_number }}
+                                    {{ p.name }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -58,11 +61,10 @@
                             {% for d in doctors %}
                                 <option value="{{ d.id }}"
                                     {% if selected_doctor and selected_doctor.id == d.id %}selected{% endif %}>
-                                    {{ d.name }}{% if d.specialty %} - {{ d.specialty }}{% endif %}
+                                    {{ d.name }}{% if d.specialty %} {% endif %}
                                 </option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Gõ để tìm nhanh tên bác sĩ</small>
                     </div>
 
                     <div class="col-md-4">
@@ -88,10 +90,16 @@
             <!-- Hiển thị thông tin nhanh -->
             <div class="row mt-3">
                 <div class="col-md-4"><strong>Bệnh nhân:</strong> {{ invoice.patient.name }}</div>
-                <div class="col-md-4"><strong>Bác sĩ:</strong>
-                    {% if selected_doctor %}{{ selected_doctor.name }}
-                    {% else %}<span class="text-muted">Chưa chọn</span>{% endif %}
-                </div>
+<div class="col-md-4">
+    <strong>Bác sĩ:</strong>
+    <span id="selected_doctor_display" class="text-primary fw-bold">
+        {% if selected_doctor %}
+             <span class="text-muted fw-normal">{{ selected_doctor.name }}</span>
+        {% else %}
+            <span class="text-muted fw-normal"> Chưa chọn</span>
+        {% endif %}
+    </span>
+</div>
                 <div class="col-md-4"><strong>Ngày:</strong>
                     {% if invoice.created_date %}{{ invoice.created_date }}
                     {% else %}{{ today }}{% endif %}
@@ -223,16 +231,30 @@
 
     {% endif %}
 </div>
-
+</div>
 <!-- Optional: Enable search for doctor select if Select2 is loaded -->
+
+</body>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.jQuery && jQuery.fn.select2) {
-    $('#doctorSelect').select2({
-      placeholder: '-- Chọn bác sĩ --',
-      width: '100%'
+    document.addEventListener('DOMContentLoaded', function() {
+        // Kiểm tra xem jQuery có hoạt động không
+        if (window.jQuery) {
+            $('#doctorSelect').on('change', function() {
+                // Lấy tên bác sĩ được chọn
+                var doctorName = $("#doctorSelect option:selected").text();
+
+                // Cập nhật vào thẻ span
+                var displaySpan = document.getElementById('selected_doctor_display');
+                if (displaySpan) {
+                    displaySpan.innerText = doctorName;
+                    displaySpan.style.color = "#0d6efd"; // Đổi màu xanh cho dễ thấy
+                    displaySpan.style.fontWeight = "bold";
+                } else {
+                    console.error("Không tìm thấy thẻ có id='selected_doctor_display'");
+                }
+            });
+        }
     });
-  }
-});
 </script>
+
 {% endblock %}
