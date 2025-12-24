@@ -246,6 +246,18 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
     )
     try:
         db.session.add(inv)
+        db.session.flush()
+
+        TreatmentSheet.query.filter(
+            TreatmentSheet.patient_id == patient_id,
+            TreatmentSheet.invoice_id == None
+        ).update({TreatmentSheet.invoice_id: inv.id}, synchronize_session=False)
+
+        Medicine.query.filter(
+            Medicine.patient_id == patient_id,
+            Medicine.invoice_id == None
+        ).update({Medicine.invoice_id: inv.id}, synchronize_session=False)
+
         db.session.commit()
         return inv
     except Exception as e:
@@ -266,6 +278,18 @@ def load_invoices(keyword=None):
         )
 
     return query.order_by(Invoice.created_date.desc()).all()
+
+def load_unpaid_treatments(patient_id):
+    return TreatmentSheet.query.filter(
+        TreatmentSheet.patient_id == patient_id,
+        TreatmentSheet.invoice_id == None
+    ).all()
+
+def load_unpaid_medicines(patient_id):
+    return Medicine.query.filter(
+        Medicine.patient_id == patient_id,
+        Medicine.invoice_id == None
+    ).all()
 
 
 def get_invoice_by_id(invoice_id):

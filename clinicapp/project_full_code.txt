@@ -249,7 +249,15 @@ from models import Invoice, Patient, Doctor
 # ================= INVOICE =================
 def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
     """Thêm hóa đơn mới"""
+
+    import datetime
+    if not created_date:
+        created_date = datetime.now()
+
+    invoice_name = f"Hóa đơn ngày {created_date}"
+
     inv = Invoice(
+        name=invoice_name,
         patient_id=patient_id,
         doctor_id=doctor_id,
         total_service=total_service,
@@ -469,6 +477,9 @@ from clinicapp.dao import add_medicine_detail, delete_details, add_service_detai
 import cloudinary.uploader
 from types import SimpleNamespace
 
+from models import UserEnum
+
+
 @app.route('/')
 def index():
     pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
@@ -487,6 +498,10 @@ def delete_detail(id, name):
 
 @app.route('/patient_management', methods=['GET', 'POST'])
 def patient_management():
+    if not current_user.is_authenticated or current_user.role != UserEnum.ADMIN:
+        flash("Bạn không có quyền truy cập trang này!", "danger")
+        return redirect('/')
+
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
@@ -519,6 +534,15 @@ def patient_management():
 
 @app.route('/cate_id/<int:id>', methods=['GET', 'POST'])
 def create_form(id):
+    if not current_user.is_authenticated:
+        return redirect('/login')
+
+    allowed_for_user = [1, 4]
+
+    if current_user.role == UserEnum.USER and id not in allowed_for_user:
+        flash("Bạn không có quyền truy cập chức năng này!", "danger")
+        return redirect('/')
+
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
@@ -800,6 +824,10 @@ def delete_invoice(invoice_id):
 
 @app.route('/doctor_management', methods=['GET', 'POST'])
 def doctor_management():
+    if not current_user.is_authenticated or current_user.role != UserEnum.ADMIN:
+        flash("Bạn không có quyền truy cập trang này!", "danger")
+        return redirect('/')
+
     q = request.args.get('q')
     page = request.args.get('page', 1, type=int)
 
@@ -2912,7 +2940,19 @@ FILE: templates\layout\base.html
 {%block header%}
 {%include 'layout/header.html'%}
 {%endblock%}
+<div class="container mt-3">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    <i class="fa-solid fa-bell me-2"></i> <strong>Thông báo:</strong> {{ message }}
 
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
 {%block content required%}
 {%endblock%}
 
@@ -2945,13 +2985,39 @@ FILE: templates\layout\header.html
         </button>
         <div class="collapse navbar-collapse" id="mynavbar">
             <ul class="navbar-nav me-auto">
-                {%for c in cates%}
+                {% for c in cates %}
+                {% if current_user.is_authenticated %}
+
+                {% if current_user.role.name == 'ADMIN' %}
                 <li class="nav-item me-5">
                     <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
                         <span class="material-symbols-rounded me-1">{{c.icon}}</span>
-                        {{c.name}}</a>
+                        {{c.name}}
+                    </a>
                 </li>
-                {%endfor%}
+
+                {% elif current_user.role.name == 'USER' %}
+                {% if c.id == 1 or c.id == 4 %}
+                <li class="nav-item me-5">
+                    <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
+                        <span class="material-symbols-rounded me-1">{{c.icon}}</span>
+                        {{c.name}}
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+
+                {% else %}
+                {% if c.id == 1 %}
+                <li class="nav-item me-5">
+                    <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
+                        <span class="material-symbols-rounded me-1">{{c.icon}}</span>
+                        {{c.name}}
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+                {% endfor %}
             </ul>
             <a href="/" class="text-dark me-2"><span class="material-symbols-rounded me-1">settings</span> </a>
             <a href="/" class="text-dark me-2"> <span class="material-symbols-rounded me-1">notifications</span></i></a>
@@ -2964,9 +3030,9 @@ FILE: templates\layout\header.html
 
             {%else%}
             <button class="me-2 login"><a href="/login">Đăng nhập</a>
-                            <button class="me-2 login"><a href="/register">Đăng ký</a>
-                {%endif%}
-            </button>
+                <button class="me-2 login"><a href="/register">Đăng ký</a>
+                    {%endif%}
+                </button>
         </div>
     </div>
 </nav>

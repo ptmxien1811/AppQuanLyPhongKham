@@ -43,7 +43,7 @@ class TreatmentSheet(Base):
     note=Column(String(150),nullable=False)
 
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
-
+    invoice_id = Column(Integer, ForeignKey('invoice.id'), nullable=True)
 class Services(Base):
     price = Column(String(150), nullable=False)
 
@@ -65,7 +65,7 @@ class Medicine(Base):
     unit= Column(String(150),nullable=False)
     number_of_days= Column(Integer, default=0)
     price = Column(String(150), nullable=False)
-
+    invoice_id = Column(Integer, ForeignKey('invoice.id'), nullable=True)
 
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
 
@@ -99,7 +99,8 @@ class Invoice(Base):
     total_payment = Column(Integer, default=0)
 
     patient = relationship('Patient', backref='invoices', lazy=True)
-
+    services = relationship('TreatmentSheet', backref='invoice', lazy=True)
+    medicines = relationship('Medicine', backref='invoice', lazy=True)
     def __str__(self):
         return f"Invoice #{self.id} - {self.patient.name}"
 

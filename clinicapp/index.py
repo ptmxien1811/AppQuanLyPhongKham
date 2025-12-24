@@ -289,8 +289,14 @@ def invoice_page():
 
     # Lấy thông tin bệnh nhân, dịch vụ, thuốc
     selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
-    services = dao.load_treatmentsheet(patient_id=patient_id) if patient_id else []
-    medicines = dao.load_medicines(patient_id=patient_id) if patient_id else []
+
+
+    if patient_id:
+        services = dao.load_unpaid_treatments(patient_id)
+        medicines = dao.load_unpaid_medicines(patient_id)
+    else:
+        services = []
+        medicines = []
 
     # Tính toán tổng tiền (dùng to_float để tránh lỗi)
     total_service = sum(to_float(s.price) for s in services)
