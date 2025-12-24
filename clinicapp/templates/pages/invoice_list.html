@@ -6,12 +6,12 @@
 <div class="treatment-form-wrapper p-4">
 <div class="container mt-4">
 
-    <div class="col-md-8 mx-auto"> <!-- Giới hạn chiều ngang -->
-        <h4 class="fw-bold text-primary mb-3 text-center">
-            <i class="bi bi-journal-text"></i> Danh sách hóa đơn
+    <div class="col-md-8 mx-auto">
+        <h4 class="mb-4 d-flex align-items-center text-center">
+             <span class="material-symbols-rounded me-2 " style="font-size:30px">list</span> Danh sách hóa đơn
         </h4>
 
-        <!-- Ô tìm kiếm -->
+
         <form method="get" class="mb-3">
             <div class="input-group input-group-sm">
                 <input type="text" name="keyword" class="form-control"
@@ -23,7 +23,6 @@
             </div>
         </form>
 
-        <!-- Bảng danh sách hóa đơn -->
         <div class="card shadow-sm">
             <div class="card-body p-0">
                 <table class="table table-sm table-bordered table-hover mb-0">
@@ -48,13 +47,13 @@
                             <td class="text-center">
                                 <a href="{{ url_for('edit_invoice', invoice_id=inv.id) }}"
                                    class="btn btn-outline-warning btn-sm me-1">
-                                    <i class="bi bi-pencil-square"></i>
+                                   <span class="material-symbols-rounded me-2 ">edit</span>
                                 </a>
                                 <form method="post" action="{{ url_for('delete_invoice', invoice_id=inv.id) }}"
-                                      style="display:inline;">
+                                      style="display:inline;>
                                     <button type="submit" class="btn btn-outline-danger btn-sm"
                                             onclick="return confirm('Bạn có chắc muốn xóa hóa đơn này?');">
-                                        <i class="bi bi-trash"></i>
+                                        <span class="material-symbols-rounded me-2 ">delete</span>
                                     </button>
                                 </form>
                             </td>

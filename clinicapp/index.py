@@ -262,14 +262,14 @@ def common_attribute():
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
 
-# Hàm chuyển đổi chuỗi tiền tệ sang float an toàn
+
 def to_float(v):
     if v is None:
         return 0
     v = str(v).strip()
-    # bỏ dấu chấm ngăn cách hàng nghìn
+
     v = v.replace('.', '')
-    # nếu có dấu phẩy thì đổi thành dấu chấm (trường hợp số thập phân)
+
     v = v.replace(',', '.')
     try:
         return float(v)
@@ -278,16 +278,13 @@ def to_float(v):
 
 @app.route('/cate_id/4', methods=['GET', 'POST'])
 def invoice_page():
-    # Danh sách bệnh nhân và bác sĩ
     patients = dao.load_patient(page=None)
     doctors = dao.load_doctors()
 
-    # Lấy dữ liệu từ form/URL
     patient_id = request.args.get('patient_id')
     doctor_id = request.form.get('doctor_id')
     created_date = request.form.get('created_date') or date.today()
 
-    # Lấy thông tin bệnh nhân, dịch vụ, thuốc
     selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
 
 
@@ -298,13 +295,11 @@ def invoice_page():
         services = []
         medicines = []
 
-    # Tính toán tổng tiền (dùng to_float để tránh lỗi)
     total_service = sum(to_float(s.price) for s in services)
     total_medicine = sum(to_float(m.price) for m in medicines)
     vat = (total_service + total_medicine) * 0.1
     total_payment = total_service + total_medicine + vat
 
-    # Nếu POST thì lưu hóa đơn
     if request.method == 'POST' and patient_id and doctor_id:
         dao.add_invoice(patient_id, doctor_id,
                         total_service, total_medicine,
@@ -312,7 +307,6 @@ def invoice_page():
         flash("Hóa đơn đã được lưu thành công!", "success")
         return redirect(url_for('invoice_list'))
 
-    # Tạo đối tượng invoice để template dễ dùng
     invoice = None
     if selected_patient:
         invoice = SimpleNamespace(
