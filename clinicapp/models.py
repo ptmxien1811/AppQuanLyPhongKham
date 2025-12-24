@@ -85,11 +85,12 @@ class Doctor(Base):
     def __str__(self):
         return self.name
 
-
 class Invoice(Base):
     __tablename__ = 'invoice'
-    created_date = Column(Date, default=date.today)
+    id = Column(Integer, primary_key=True)   # nên có id
+    name = Column(String(100))               # thêm cột name
 
+    created_date = Column(Date, default=date.today)
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
     doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
 
@@ -103,9 +104,6 @@ class Invoice(Base):
     medicines = relationship('Medicine', backref='invoice', lazy=True)
     def __str__(self):
         return f"Invoice #{self.id} - {self.patient.name}"
-
-
-
 
 if __name__ == '__main__':
     with app.app_context():
@@ -150,6 +148,17 @@ if __name__ == '__main__':
 
             for s in serv:
                 db.session.add(Services(**s))
+
+
+        with open('data/doctor.json', encoding='utf-8') as f:
+            doctor = json.load(f)
+            for d in doctor:
+                db.session.add(Doctor(**d))
+        with open('data/invoice.json', encoding='utf-8') as f:
+            inv = json.load(f)
+            for i in inv:
+                db.session.add(Invoice(**i))
+
         #
         # add c1,c2,.. vao db
         db.session.add_all([c1, c2, c3, c4, c5])
@@ -167,3 +176,4 @@ if __name__ == '__main__':
         # chay lenh, (phai chay moi cap nhat trong database, tuong tu nhu execute)
 
         db.session.commit()
+

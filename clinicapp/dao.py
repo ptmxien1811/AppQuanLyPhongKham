@@ -224,15 +224,18 @@ from sqlalchemy import or_
 from clinicapp import db
 from models import Invoice, Patient, Doctor
 
-# ================= INVOICE =================
-def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
-    """Thêm hóa đơn mới"""
+from datetime import datetime
 
-    import datetime
+from datetime import datetime
+
+def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
     if not created_date:
         created_date = datetime.now()
+    elif isinstance(created_date, str):
+        # Chuyển chuỗi thành datetime
+        created_date = datetime.strptime(created_date, "%Y-%m-%d")
 
-    invoice_name = f"Hóa đơn ngày {created_date}"
+    invoice_name = f"Hóa đơn ngày {created_date.strftime('%d/%m/%Y')}"
 
     inv = Invoice(
         name=invoice_name,
@@ -246,35 +249,23 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
     )
     try:
         db.session.add(inv)
-        db.session.flush()
-
-        TreatmentSheet.query.filter(
-            TreatmentSheet.patient_id == patient_id,
-            TreatmentSheet.invoice_id == None
-        ).update({TreatmentSheet.invoice_id: inv.id}, synchronize_session=False)
-
-        Medicine.query.filter(
-            Medicine.patient_id == patient_id,
-            Medicine.invoice_id == None
-        ).update({Medicine.invoice_id: inv.id}, synchronize_session=False)
-
         db.session.commit()
         return inv
     except Exception as e:
-        print(f"Lỗi thêm hóa đơn: {e}")
         db.session.rollback()
+        print("Lỗi lưu hóa đơn:", e)
         return None
 
-
 def load_invoices(keyword=None):
-    """Lấy danh sách hóa đơn, có thể tìm kiếm theo tên bệnh nhân hoặc bác sĩ"""
     query = Invoice.query.join(Patient).join(Doctor)
 
     if keyword:
         keyword = f"%{keyword}%"
         query = query.filter(
-            or_(Patient.name.ilike(keyword),
-                Doctor.name.ilike(keyword))
+            or_(
+                Patient.name.ilike(keyword),
+                Doctor.name.ilike(keyword)
+            )
         )
 
     return query.order_by(Invoice.created_date.desc()).all()
@@ -290,6 +281,7 @@ def load_unpaid_medicines(patient_id):
         Medicine.patient_id == patient_id,
         Medicine.invoice_id == None
     ).all()
+
 
 
 def get_invoice_by_id(invoice_id):
@@ -384,6 +376,44 @@ def delete_doctor(id):
             db.session.rollback()
             return False
     return False
+
+from sqlalchemy import func
+from models import Invoice, Doctor
+
+# ================= DOANH THU =================
+
+def revenue_by_date(from_date=None, to_date=None):
+    query = db.session.query(
+        Invoice.created_date,
+        func.sum(Invoice.total_payment)
+    )
+
+    if from_date:
+        query = query.filter(Invoice.created_date >= from_date)
+    if to_date:
+        query = query.filter(Invoice.created_date <= to_date)
+
+    query = query.group_by(Invoice.created_date).order_by(Invoice.created_date)
+
+    return query.all()
+
+
+def revenue_by_doctor(doctor_id, from_date=None, to_date=None):
+    query = db.session.query(
+        Doctor.name,
+        func.sum(Invoice.total_payment)
+    ).join(Invoice)
+
+    query = query.filter(Invoice.doctor_id == doctor_id)
+
+    if from_date:
+        query = query.filter(Invoice.created_date >= from_date)
+    if to_date:
+        query = query.filter(Invoice.created_date <= to_date)
+
+    query = query.group_by(Doctor.name)
+
+    return query.first()
 
 
 if __name__ == '__main__':

@@ -1,94 +1,85 @@
-{%extends 'layout/base.html'%}
+{% extends 'layout/base.html' %}
+{% block content %}
+<div class="container mt-4">
 
-{%block content%}
-<body style="background-color: #D5E1E6">
-<div class="treatment-form-wrapper p-4">
-    <h3 class="mb-4 d-flex align-items-center">
-        <span class="material-symbols-rounded me-2">list_alt</span> Báo cáo doanh thu
-    </h3>
+    <!-- TIÊU ĐỀ -->
+    <h4 class="fw-bold text-primary mb-4">
+        <i class="bi bi-bar-chart"></i> Báo cáo doanh thu
+    </h4>
 
-    <div class="row align-items-end mb-4">
-        <div class="col-md-3 mb-3">
-            <label for="drug_name" class="form-label">Tên thuốc</label>
-            <input type="text" class="form-control" id="drug_name" placeholder="Nhập tên thuốc">
+    <!-- LỌC THEO NGÀY -->
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
         </div>
-        <div class="col-md-3 mb-3">
-            <label for="dosage" class="form-label">Liều dùng</label>
-            <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
+        <div class="col-md-3">
+            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
         </div>
-        <div class="col-md-3 mb-3">
-            <label for="unit" class="form-label">Đơn vị</label>
-            <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="number_of_days" class="form-label">Số ngày</label>
-            <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="prescription_date" class="form-label">Ngày kê đơn</label>
-            <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
-        </div>
-        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <button class="btn btn-primary me-2 treat-action">
-                <span class="material-symbols-rounded">add_box</span> Thêm mới
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100">
+                <i class="bi bi-funnel"></i> Lọc
             </button>
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc">
-            <button class="btn btn-outline-primary treat-action">
-                <span class="material-symbols-rounded">search</span> Tìm kiếm
-            </button>
+        </div>
+    </form>
+
+    <!-- BIỂU ĐỒ -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <canvas id="revenueChart" height="90"></canvas>
         </div>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-header border-bottom-0">
-            <p class="h6 mb-0 d-flex align-items-center">
-                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách đơn kê thuốc
-            </p>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                    <tr>
-                        <th style="width: 5%;">STT</th>
-                        <th style="width: 25%;">Tên thuốc</th>
-                        <th style="width: 15%;">Liều dùng</th>
-                        <th style="width: 15%;">Đơn vị</th>
-                        <th style="width: 15%;">Số ngày</th>
-                        <th style="width: 15%;">Ngày kê đơn</th>
-                        <th style="width: 5%;"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Paracetamol</td>
-                        <td>2</td>
-                        <td>viên/ngày</td>
-                        <td>5</td>
-                        <td>25/07/2025</td>
-                        <td>
-                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
-                            </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <hr>
 
-    <nav class="d-flex justify-content-end mt-3">
-        <ul class="pagination pagination-sm mb-0">
-            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">4</a></li>
-            <li class="page-item"><a class="page-link" href="#">5</a></li>
-            <li class="page-item"><a class="page-link" href="#">»</a></li>
-        </ul>
-    </nav>
+    <!-- DOANH THU THEO BÁC SĨ -->
+    <h5 class="fw-bold text-success mb-3">
+        <i class="bi bi-person-badge"></i> Doanh thu theo bác sĩ
+    </h5>
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-4">
+            <select name="doctor_id" class="form-select">
+                <option value="">-- Chọn bác sĩ --</option>
+                {% for d in doctors %}
+                <option value="{{ d.id }}"
+                    {% if doctor_id and doctor_id|int == d.id %}selected{% endif %}>
+                    {{ d.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-success w-100">
+                <i class="bi bi-search"></i> Xem
+            </button>
+        </div>
+    </form>
+
+    {% if doctor_revenue %}
+    <div class="alert alert-info">
+        <strong>{{ doctor_revenue[0] }}</strong> :
+        {{ "{:,.0f}".format(doctor_revenue[1]) }} VNĐ
+    </div>
+    {% endif %}
+
 </div>
-</body>
-{%endblock%}
+
+<!-- DATA TRUYỀN SANG JS -->
+<div id="chart-data"
+     data-labels='{{ labels | tojson }}'
+     data-values='{{ values | tojson }}'>
+</div>
+
+<!-- SCRIPT -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='tab5.js') }}"></script>
+{% endblock %}

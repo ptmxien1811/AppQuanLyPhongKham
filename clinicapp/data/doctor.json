@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "Nguyễn Văn A",
+    "specialty": "Nha tổng quát",
+    "phone_number": "0909123456",
+    "email": "nguyenvana@example.com",
+    "active": true,
+    "created_date": "2023-01-15"
+  },
+  {
+    "id": 2,
+    "name": "Trần Thị B",
+    "specialty": "Nha chỉnh hình",
+    "phone_number": "0909234567",
+    "email": "tranthib@example.com",
+    "active": true,
+    "created_date": "2023-02-20"
+  },
+  {
+    "id": 3,
+    "name": "Lê Văn C",
+    "specialty": "Nha nội",
+    "phone_number": "0909345678",
+    "email": "levanc@example.com",
+    "active": true,
+    "created_date": "2023-03-10"
+  }
+]

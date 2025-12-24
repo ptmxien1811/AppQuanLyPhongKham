@@ -163,33 +163,6 @@ def create_form(id):
 
 
 
-    elif id == 4:
-        all_patients = dao.load_patient(page=None)
-        doctors = dao.load_doctors()  # thêm dòng này
-
-        p_id = selected_patient.id if selected_patient else None
-        services = dao.load_treatmentsheet(patient_id=p_id) if p_id else []
-        medicines = dao.load_medicines(patient_id=p_id) if p_id else []
-
-        total_service = sum(float(s.price) for s in services)
-        total_medicine = sum(float(m.price) for m in medicines)
-        sub_total = total_service + total_medicine
-        vat = sub_total * 0.1
-        total_payment = sub_total + vat
-
-        return render_template(
-            "pages/tab4.html",
-            patient=all_patients,
-            doctors=doctors,  # truyền vào template
-            selected_patient=selected_patient,
-            services=services,
-            medicines=medicines,
-            total_service=total_service,
-            total_medicine=total_medicine,
-            vat=vat,
-            total_payment=total_payment
-        )
-
     else:
 
         return render_template("pages/tab5.html")
@@ -276,37 +249,47 @@ def to_float(v):
     except ValueError:
         return 0
 
+from types import SimpleNamespace
+from datetime import date
+from flask import request, render_template, redirect, url_for, flash
+
 @app.route('/cate_id/4', methods=['GET', 'POST'])
 def invoice_page():
     patients = dao.load_patient(page=None)
     doctors = dao.load_doctors()
 
     patient_id = request.args.get('patient_id')
+    selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
     doctor_id = request.form.get('doctor_id')
     created_date = request.form.get('created_date') or date.today()
 
-    selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
-
-
-    if patient_id:
-        services = dao.load_unpaid_treatments(patient_id)
-        medicines = dao.load_unpaid_medicines(patient_id)
-    else:
-        services = []
-        medicines = []
+    # Tính tổng dịch vụ và thuốc
+    services = dao.load_unpaid_treatments(patient_id) if patient_id else []
+    medicines = dao.load_unpaid_medicines(patient_id) if patient_id else []
 
     total_service = sum(to_float(s.price) for s in services)
     total_medicine = sum(to_float(m.price) for m in medicines)
-    vat = (total_service + total_medicine) * 0.1
+    vat = int((total_service + total_medicine) * 0.1)
     total_payment = total_service + total_medicine + vat
 
+    # POST: Lưu hóa đơn
     if request.method == 'POST' and patient_id and doctor_id:
-        dao.add_invoice(patient_id, doctor_id,
-                        total_service, total_medicine,
-                        vat, total_payment, created_date)
-        flash("Hóa đơn đã được lưu thành công!", "success")
-        return redirect(url_for('invoice_list'))
+        inv = dao.add_invoice(
+            patient_id=int(patient_id),
+            doctor_id=int(doctor_id),
+            total_service=total_service,
+            total_medicine=total_medicine,
+            vat=vat,
+            total_payment=total_payment,
+            created_date=created_date
+        )
+        if inv:
+            flash("✅ Lưu hóa đơn thành công!", "success")
+            return redirect(url_for('view_invoice', invoice_id=inv.id))
+        else:
+            flash("❌ Lỗi khi lưu hóa đơn!", "danger")
 
+    # GET: hiển thị thông tin tạm tính trước khi lưu
     invoice = None
     if selected_patient:
         invoice = SimpleNamespace(
@@ -317,16 +300,16 @@ def invoice_page():
             total_medicine=total_medicine,
             vat=vat,
             total_payment=total_payment,
-            created_date=created_date
+            created_date=date.today()
         )
 
-    return render_template("pages/tab4.html",
-                           patients=patients,
-                           doctors=doctors,
-                           invoice=invoice,
-                           selected_doctor=dao.get_doctor_by_id(doctor_id) if doctor_id else None,
-                           today=date.today())
-
+    return render_template(
+        "pages/tab4.html",
+        patients=patients,
+        doctors=doctors,
+        invoice=invoice,
+        today=date.today()
+    )
 
 @app.route('/invoices')
 def invoice_list():
@@ -338,7 +321,7 @@ def edit_invoice(invoice_id):
     invoice = dao.get_invoice_by_id(invoice_id)
     doctors = dao.load_doctors()
     if request.method == 'POST':
-        doctor_id = request.form.get('doctor_id')
+        doctor_id = request.form.get('doctor_id') or request.args.get('doctor_id')
         dao.update_invoice(invoice_id, doctor_id=doctor_id)
         flash("Hóa đơn đã được cập nhật!", "info")
         return redirect(url_for('invoice_list'))
@@ -376,6 +359,72 @@ def doctor_management():
 
     doctors = dao.load_doctors(q=q, page=page)
     return render_template('pages/doctor_management.html', pages=pages, page=page, doctors=doctors)
+@app.route('/cate_id/5', methods=['GET'])
+def revenue_report_2():
+    from_date = request.args.get('from_date')
+    to_date = request.args.get('to_date')
+    doctor_id = request.args.get('doctor_id')
+
+    doctors = dao.load_doctors()
+
+    # Doanh thu toàn phòng khám
+    revenue_data = dao.revenue_by_date(from_date, to_date)
+
+    labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
+    values = [r[1] for r in revenue_data]
+
+    # Doanh thu bác sĩ
+    doctor_revenue = None
+    if doctor_id:
+        doctor_revenue = dao.revenue_by_doctor(
+            doctor_id=doctor_id,
+            from_date=from_date,
+            to_date=to_date
+        )
+
+    return render_template(
+        "pages/tab5.html",
+        labels=labels,
+        values=values,
+        doctors=doctors,
+        doctor_revenue=doctor_revenue,
+        from_date=from_date,
+        to_date=to_date,
+        doctor_id=doctor_id
+    )
+
+@app.route('/cate_id/5', methods=['GET'])
+def revenue_report():
+    from_date = request.args.get('from_date')
+    to_date = request.args.get('to_date')
+    doctor_id = request.args.get('doctor_id')
+
+    doctors = dao.load_doctors()
+
+    # Doanh thu toàn phòng khám
+    revenue_data = dao.revenue_by_date(from_date, to_date)
+    labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
+    values = [r[1] for r in revenue_data]
+
+    # Doanh thu theo bác sĩ
+    doctor_revenue = None
+    if doctor_id:
+        doctor_revenue = dao.revenue_by_doctor(
+            doctor_id=doctor_id,
+            from_date=from_date,
+            to_date=to_date
+        )
+
+    return render_template(
+        "pages/tab5.html",
+        labels=labels,
+        values=values,
+        doctors=doctors,
+        doctor_revenue=doctor_revenue,
+        from_date=from_date,
+        to_date=to_date,
+        doctor_id=doctor_id
+    )
 
 
 if __name__ == '__main__':
