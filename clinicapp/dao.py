@@ -227,7 +227,15 @@ from models import Invoice, Patient, Doctor
 # ================= INVOICE =================
 def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
     """Thêm hóa đơn mới"""
+
+    import datetime
+    if not created_date:
+        created_date = datetime.now()
+
+    invoice_name = f"Hóa đơn ngày {created_date}"
+
     inv = Invoice(
+        name=invoice_name,
         patient_id=patient_id,
         doctor_id=doctor_id,
         total_service=total_service,
