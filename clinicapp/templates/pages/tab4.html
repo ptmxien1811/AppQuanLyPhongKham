@@ -1,0 +1,238 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- TIÊU ĐỀ -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-primary">
+            <i class="bi bi-receipt"></i> LẬP HÓA ĐƠN THANH TOÁN
+        </h4>
+        <div>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
+                <i class="bi bi-journal-text"></i> Xem lại hóa đơn
+            </a>
+        </div>
+    </div>
+
+    <!-- CHỌN BỆNH NHÂN -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get">
+                <label class="form-label fw-semibold">Chọn bệnh nhân</label>
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <select name="patient_id" class="form-select" required>
+                            <option disabled selected>-- Chọn bệnh nhân --</option>
+                            {% for p in patients %}
+                                <option value="{{ p.id }}"
+                                    {% if invoice and invoice.patient.id == p.id %}selected{% endif %}>
+                                    {{ p.name }} - {{ p.phone_number }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Hiển thị
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if invoice %}
+
+    <!-- THÔNG TIN HÓA ĐƠN: CHỌN BÁC SĨ + NGÀY KHÁM + LƯU -->
+    <div class="card shadow-sm mb-4 border-start border-4 border-primary">
+        <div class="card-body">
+            <h6 class="fw-bold text-primary mb-3">Thông tin hóa đơn</h6>
+
+            <form method="post">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Bác sĩ phụ trách</label>
+                        <select name="doctor_id" class="form-select" id="doctorSelect" required>
+                            <option disabled selected>-- Chọn bác sĩ --</option>
+                            {% for d in doctors %}
+                                <option value="{{ d.id }}"
+                                    {% if selected_doctor and selected_doctor.id == d.id %}selected{% endif %}>
+                                    {{ d.name }}{% if d.specialty %} - {{ d.specialty }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Gõ để tìm nhanh tên bác sĩ</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Ngày khám</label>
+                        <input type="date" name="created_date" class="form-control"
+                               value="{{ (invoice.created_date|string) if invoice.created_date else (today|string) }}" required>
+                    </div>
+
+                    <!-- Giữ lại patient_id để lưu hóa đơn -->
+                    <input type="hidden" name="patient_id" value="{{ invoice.patient.id }}">
+
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save"></i> Lưu hóa đơn
+                        </button>
+                        <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
+                            <i class="bi bi-journal-text"></i> Xem lại hóa đơn
+                        </a>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Hiển thị thông tin nhanh -->
+            <div class="row mt-3">
+                <div class="col-md-4"><strong>Bệnh nhân:</strong> {{ invoice.patient.name }}</div>
+                <div class="col-md-4"><strong>Bác sĩ:</strong>
+                    {% if selected_doctor %}{{ selected_doctor.name }}
+                    {% else %}<span class="text-muted">Chưa chọn</span>{% endif %}
+                </div>
+                <div class="col-md-4"><strong>Ngày:</strong>
+                    {% if invoice.created_date %}{{ invoice.created_date }}
+                    {% else %}{{ today }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- THÔNG TIN BỆNH NHÂN -->
+    <div class="card shadow-sm mb-4 border-start border-4 border-info">
+        <div class="card-body">
+            <h6 class="fw-bold text-info mb-3">Thông tin bệnh nhân</h6>
+            <div class="row">
+                <div class="col-md-4"><strong>Tên:</strong> {{ invoice.patient.name }}</div>
+                <div class="col-md-4"><strong>SĐT:</strong> {{ invoice.patient.phone_number }}</div>
+                <div class="col-md-4"><strong>Địa chỉ:</strong> {{ invoice.patient.address }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DỊCH VỤ -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold text-success mb-3">
+                <i class="bi bi-clipboard-check"></i> Dịch vụ sử dụng
+            </h6>
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr class="text-center">
+                        <th>STT</th>
+                        <th>Dịch vụ</th>
+                        <th>Đơn giá (VNĐ)</th>
+                        <th>Ghi chú</th>
+                        <th>Ngày</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in invoice.services %}
+                    <tr>
+                        <td class="text-center">{{ loop.index }}</td>
+                        <td>{{ s.name }}</td>
+                        <td class="text-end text-success">
+                            {{ "{:,.0f}".format(s.price|float) }}
+                        </td>
+                        <td>{{ s.note }}</td>
+                        <td class="text-center">{{ s.created_date }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            Không có dịch vụ
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- THUỐC -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold text-warning mb-3">
+                <i class="bi bi-capsule"></i> Thuốc sử dụng
+            </h6>
+           <table class="table table-sm table-bordered table-hover align-middle">
+    <thead class="table-light text-center small">
+        <tr>
+            <th>STT</th>
+            <th>Tên thuốc</th>
+            <th>Liều dùng</th>
+            <th>Số ngày</th>
+            <th>Chi phí (VNĐ)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in invoice.medicines %}
+        <tr class="small">
+            <td class="text-center">{{ loop.index }}</td>
+            <td>{{ m.name }}</td>
+            <td>{{ m.dosage }} {{ m.unit }}</td>
+            <td class="text-center">{{ m.number_of_days }}</td>
+            <td class="text-end text-warning">{{ "{:,.0f}".format(m.price|float) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center text-muted small">Không có thuốc</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+        </div>
+    </div>
+
+    <!-- TỔNG TIỀN -->
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3">Tổng thanh toán</h5>
+            <div class="row mb-2">
+                <div class="col">Tổng tiền dịch vụ</div>
+                <div class="col text-end">
+                    {{ "{:,.0f}".format(invoice.total_service|float) }} VNĐ
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">Tổng tiền thuốc</div>
+                <div class="col text-end">
+                    {{ "{:,.0f}".format(invoice.total_medicine|float) }} VNĐ
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">VAT (10%)</div>
+                <div class="col text-end">
+                    {{ "{:,.0f}".format(invoice.vat|float) }} VNĐ
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col fw-bold fs-5 text-danger">
+                    TỔNG CỘNG
+                </div>
+                <div class="col text-end fw-bold fs-5 text-danger">
+                    {{ "{:,.0f}".format(invoice.total_payment|float) }} VNĐ
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Optional: Enable search for doctor select if Select2 is loaded -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.jQuery && jQuery.fn.select2) {
+    $('#doctorSelect').select2({
+      placeholder: '-- Chọn bác sĩ --',
+      width: '100%'
+    });
+  }
+});
+</script>
+{% endblock %}

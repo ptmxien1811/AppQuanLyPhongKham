@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Đặt lịch",
+    "path": "tab1.html",
+    "icon": "calendar_month"
+  },
+  {
+    "id": 2,
+    "name": "Lập phiếu",
+    "path": "tab2.html",
+    "icon": "medical_information"
+  },
+  {
+    "id": 3,
+    "name": "Quản lý thuốc",
+    "path": "tab3.html",
+    "icon": "fluid_balance"
+  },
+  {
+    "id": 4,
+    "name": "Lập hóa đơn thanh toán",
+    "path": "tab4.html",
+    "icon": "credit_score"
+  },
+  {
+    "id": 5,
+    "name": "Báo cáo doanh thu",
+    "path": "tab5.html",
+    "icon": "chart_data"
+  }
+]

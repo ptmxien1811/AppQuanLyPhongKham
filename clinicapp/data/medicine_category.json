@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "name": "Paracetamol 500mg",
+    "price": "5.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 2,
+    "name": "Amoxicillin 500mg",
+    "price": "10.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 3,
+    "name": "Alphachymotrypsin",
+    "price": "8.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 4,
+    "name": "Vitamin C 500mg",
+    "price": "2.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 5,
+    "name": "Panadol Extra",
+    "price": "3.000",
+    "unit": "viên/lần"
+  },
+  {
+    "id": 6,
+    "name": "Gaviscon",
+    "price": "15.000",
+    "unit": "gói/ngày"
+  },
+  {
+    "id": 7,
+    "name": "Augmentin 625mg",
+    "price": "12.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 8,
+    "name": "Klamentin 1g",
+    "price": "14.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 9,
+    "name": "Medrol 16mg",
+    "price": "4.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 10,
+    "name": "Omeprazol 20mg",
+    "price": "1.500",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 11,
+    "name": "Nước muối sinh lý",
+    "price": "10.000",
+    "unit": "chai/ngày"
+  },
+  {
+    "id": 12,
+    "name": "Smecta",
+    "price": "5.000",
+    "unit": "gói/ngày"
+  },
+  {
+    "id": 13,
+    "name": "Berberin",
+    "price": "25.000",
+    "unit": "lọ/đợt"
+  },
+  {
+    "id": 14,
+    "name": "Efferalgan 500mg",
+    "price": "6.000",
+    "unit": "viên/lần"
+  },
+  {
+    "id": 15,
+    "name": "Oresol",
+    "price": "3.000",
+    "unit": "gói/ngày"
+  }
+]

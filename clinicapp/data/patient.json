@@ -1,0 +1,162 @@
+[
+  {
+    "id": 1,
+    "name": "Hoàng Việt Tuấn",
+    "birthday": "2025-01-01",
+    "sex": "Nam",
+    "phone_number": "0777288270",
+    "identity_card": "079205002801",
+    "email": "tuanhoang5050@gmail.com",
+    "address": "1007/64 Lạc Long Quân, Phường Bảy Hiền, TP. Hồ Chí Minh"
+  },
+    {
+    "id": 2,
+    "name": "Nguyễn Thị Mai Anh",
+    "birthday": "1998-05-12",
+    "sex": "Nữ",
+    "phone_number": "0909123456",
+    "identity_card": "079198001234",
+    "email": "maianh.nguyen98@gmail.com",
+    "address": "256 Nguyễn Văn Cừ, Phường Nguyễn Cư Trinh, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 3,
+    "name": "Trần Văn Hùng",
+    "birthday": "1985-11-20",
+    "sex": "Nam",
+    "phone_number": "0918887766",
+    "identity_card": "079085009876",
+    "email": "hungtran85@yahoo.com",
+    "address": "45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 4,
+    "name": "Lê Thị Thu Hà",
+    "birthday": "2000-03-08",
+    "sex": "Nữ",
+    "phone_number": "0933445566",
+    "identity_card": "079300005678",
+    "email": "thuha.le2000@outlook.com",
+    "address": "123 Đường 3/2, Phường 11, Quận 10, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 5,
+    "name": "Phạm Minh Tuấn",
+    "birthday": "1992-09-15",
+    "sex": "Nam",
+    "phone_number": "0977112233",
+    "identity_card": "079092004321",
+    "email": "minhtuan.pham@company.vn",
+    "address": "89 Cách Mạng Tháng 8, Phường 13, Quận 10, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 6,
+    "name": "Vũ Thị Ngọc Lan",
+    "birthday": "1975-07-25",
+    "sex": "Nữ",
+    "phone_number": "0988990011",
+    "identity_card": "023175001122",
+    "email": "ngoclan.vu75@gmail.com",
+    "address": "56 Hoàng Diệu, Phường 12, Quận 4, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 7,
+    "name": "Đặng Quốc Bảo",
+    "birthday": "2005-12-30",
+    "sex": "Nam",
+    "phone_number": "0366778899",
+    "identity_card": "079205008899",
+    "email": "quocbao.dang05@student.edu.vn",
+    "address": "101 Đinh Tiên Hoàng, Phường Đa Kao, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 8,
+    "name": "Bùi Thị Thanh Tâm",
+    "birthday": "1988-02-14",
+    "sex": "Nữ",
+    "phone_number": "0945678901",
+    "identity_card": "079188007766",
+    "email": "thanhtam.bui@hotmail.com",
+    "address": "33 Phan Xích Long, Phường 2, Quận Phú Nhuận, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 9,
+    "name": "Ngô Văn Long",
+    "birthday": "1995-06-01",
+    "sex": "Nam",
+    "phone_number": "0966554433",
+    "identity_card": "079095003344",
+    "email": "long.ngo95@tech.com",
+    "address": "789 Phạm Văn Đồng, Phường Hiệp Bình Chánh, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 10,
+    "name": "Đỗ Thị Hồng Nhung",
+    "birthday": "1990-10-10",
+    "sex": "Nữ",
+    "phone_number": "0901239876",
+    "identity_card": "079190005566",
+    "email": "hongnhung.do@agency.vn",
+    "address": "12 Tôn Đản, Phường 13, Quận 4, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 11,
+    "name": "Hồ Minh Khang",
+    "birthday": "1980-04-30",
+    "sex": "Nam",
+    "phone_number": "0912345678",
+    "identity_card": "079080001122",
+    "email": "minhkhang.ho@realestate.com",
+    "address": "67 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 12,
+    "name": "Lý Thị Kim Oanh",
+    "birthday": "1999-01-20",
+    "sex": "Nữ",
+    "phone_number": "0388997766",
+    "identity_card": "079199009988",
+    "email": "kimoanh.ly99@gmail.com",
+    "address": "234 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 13,
+    "name": "Trương Tấn Phát",
+    "birthday": "2002-08-15",
+    "sex": "Nam",
+    "phone_number": "0707112233",
+    "identity_card": "079202004455",
+    "email": "tanphat.truong@university.edu.vn",
+    "address": "55 Lê Văn Việt, Phường Tăng Nhơn Phú A, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 14,
+    "name": "Dương Thị Mỹ Linh",
+    "birthday": "1993-11-05",
+    "sex": "Nữ",
+    "phone_number": "0933998877",
+    "identity_card": "079193006677",
+    "email": "mylinh.duong@fashion.vn",
+    "address": "90 Hai Bà Trưng, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 15,
+    "name": "Võ Văn Hậu",
+    "birthday": "1982-12-22",
+    "sex": "Nam",
+    "phone_number": "0987654321",
+    "identity_card": "079082002233",
+    "email": "vanhau.vo@construction.com",
+    "address": "150 Nguyễn Oanh, Phường 7, Quận Gò Vấp, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 16,
+    "name": "Mai Thị Tuyết Lan",
+    "birthday": "1978-05-05",
+    "sex": "Nữ",
+    "phone_number": "0911223344",
+    "identity_card": "079078005544",
+    "email": "tuyetlan.mai@shop.vn",
+    "address": "30 Quang Trung, Phường 10, Quận Gò Vấp, TP. Hồ Chí Minh"
+  }
+]

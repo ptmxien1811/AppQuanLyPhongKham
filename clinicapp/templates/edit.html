@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Sửa lịch hẹn</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<h2>✏️ Sửa lịch hẹn</h2>
+
+<form method="post">
+    <input name="ten_benh_nhan" value="{{ lich.ten_benh_nhan }}" required><br><br>
+    <input type="date" name="ngay" value="{{ lich.ngay }}" required><br><br>
+    <input type="time" name="gio" value="{{ lich.gio }}" required><br><br>
+    <textarea name="noi_dung">{{ lich.noi_dung }}</textarea><br><br>
+    <button type="submit">Lưu</button>
+</form>
+
+</body>
+</html>

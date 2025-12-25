@@ -1,0 +1,126 @@
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">patient_list</span> Quản lý bệnh nhân
+    </h3>
+    <hr>
+
+    <form method="post">
+        <div class="row align-items-end mb-4">
+            <div class="col-md-2 mb-3">
+                <label for="patient_name" class="form-label">Tên bệnh nhân</label>
+                <input type="text" class="form-control" id="patient_name" placeholder="Nhập tên bệnh nhân" name="tenbenhnhan">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="birthday" class="form-label">Ngày sinh</label>
+                <input type="date" class="form-control" id="birthday" placeholder="" name="ngaysinh">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="sex" class="form-label">Giới tính</label>
+                <input type="text" class="form-control" id="sex" placeholder="Nhập giới tính" name="gioitinh">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="phone_number" class="form-label">Số điện thoại</label>
+                <input type="text" class="form-control" id="phone_number" placeholder="Nhập số điện thoại" name="sodienthoai">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="identity_card" class="form-label">CMND/CCCD</label>
+                <input type="text" class="form-control" id="identity_card" placeholder="Nhập CMND/CCCD" name="cancuoc">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="text" class="form-control" id="email" placeholder="Nhập vào email" name="email">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="address" class="form-label">Địa chỉ</label>
+                <input type="text" class="form-control" id="address" placeholder="Nhập địa chỉ" name="diachi">
+            </div>
+
+
+            <div class="col-md-2 mb-3">
+                <!--                name="action" value="add_new"-->
+                <button class="btn btn-primary me-2 treat-action" type="submit">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+            </div>
+    </form>
+    <form>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <input type="text" class="form-control w-50 me-2" placeholder="Nhập vào từ khóa" name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit" value="search">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </form>
+
+
+</div>
+
+
+<div class="card shadow-sm">
+    <div class="card-header border-bottom-0">
+        <p class="h6 mb-0 d-flex align-items-center">
+            <span class="material-symbols-rounded me-2">patient_list</span> Danh sách bệnh nhân
+        </p>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                <tr>
+                    <th style="width: 2%;">STT</th>
+                    <th style="width: 10%;">Tên bệnh nhân</th>
+                    <th style="width: 10%;">Ngày sinh</th>
+                    <th style="width: 8%;">Số điện thoại</th>
+                    <th style="width: 10%;">CMND/CCCD</th>
+                    <th style="width: 20%;">Địa chỉ</th>
+                    <th style="width: 3%;">Xóa</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for p in patient%}
+                <tr>
+                    <td>{{p.id}}</td>
+                    <td>{{p.name}}</td>
+                    <td>{{p.birthday}}</td>
+                    <td>{{p.phone_number}}</td>
+                    <td>{{p.identity_card}}</td>
+                    <td>{{p.address}}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_detail', id=p.id,name='Patient') }}"
+                              style="display:inline;">
+
+                            <input type="hidden" name="action" value="delete_details">
+
+                            <button type="submit" class="btn text-danger p-0" title="Xóa thông tin bệnh nhân"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa thông tin bệnh nhân {{ p.name }} không?');">
+                                <span class="material-symbols-rounded delete">delete</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {%endfor%}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<nav class="d-flex justify-content-end mt-3">
+    <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+        {% for i in range(1, pages+1)%}
+        <li class="page-item"><a class="page-link"
+                                 href="{{ url_for('patient_management', page=i, q=request.args.get('q', '')) }}">{{i}}</a>
+        </li>
+        {%endfor%}
+        <li class="page-item"><a class="page-link" href="#">»</a></li>
+    </ul>
+</nav>
+</div>
+</body>
+{%endblock%}

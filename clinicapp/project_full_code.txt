@@ -1,0 +1,4267 @@
+
+============================================================
+FILE: admin.py
+============================================================
+from flask_admin import Admin
+from flask_admin.theme import Bootstrap4Theme
+from flask_admin.contrib.sqla import ModelView
+
+from models import Category, Medicine, TreatmentSheet, Patient
+from clinicapp import app, db
+
+
+admin = Admin(app=app, name="CLINIC",theme=Bootstrap4Theme())
+
+# admin.add_view(ModelView(Category, db.session))
+admin.add_view(ModelView(Medicine, db.session))
+admin.add_view(ModelView(TreatmentSheet, db.session))
+admin.add_view(ModelView(Patient, db.session))
+
+============================================================
+FILE: dao.py
+============================================================
+import hashlib
+import json
+
+from clinicapp import app, db
+from models import Category, Medicine, User, TreatmentSheet, Services, Patient, MedicineCategory
+
+
+def load_categories():
+    return Category.query.all()
+
+
+def auth_user(username, password):
+    password = str(hashlib.md5(password.encode("utf-8")).hexdigest())
+    return User.query.filter(User.username.__eq__(username) and User.password.__eq__(password)).first()
+
+
+def add_user(name, username, password, avatar):
+    password = hashlib.md5(password.strip().encode("utf-8")).hexdigest()
+    u = User(name=name, username=username.strip(), password=password, avatar=avatar)
+    db.session.add(u)
+    db.session.commit()
+
+
+def delete_details(id, name):
+    try:
+        # Tim ban ghi dua tren ID va Ten Model
+        if (name == 'Medicine'):
+            to_delete = Medicine.query.get(id)
+        if (name == 'TreatmentSheet'):
+            to_delete = TreatmentSheet.query.get(id)
+        if (name == 'Patient'):
+            to_delete = Patient.query.get(id)
+
+        if to_delete:
+            db.session.delete(to_delete)
+            db.session.commit()
+            return True
+        else:
+            return False
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"DAO ERROR (Delete): {e}")
+        return False
+
+def get_patient_by_name(name):
+    if not name:
+        return None
+    return Patient.query.filter(Patient.name == name.strip()).first()
+
+
+def add_service_detail(dichvu, dongia, ghichu, ngaylapphieu, patient_id):
+    new_treatment_detail = TreatmentSheet(
+        name=dichvu,
+        price=dongia,
+        note=ghichu,
+        created_date=ngaylapphieu,
+        patient_id=patient_id
+    )
+
+    try:
+        db.session.add(new_treatment_detail)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Lỗi thêm phiếu: {e}")
+        db.session.rollback()
+        return False
+
+
+def add_patient_info(tenbenhnhan, ngaysinh, gioitinh, sodienthoai, cancuoc, email, diachi):
+    new_patient_info = Patient(
+        name=tenbenhnhan,
+        phone_number=sodienthoai,
+        email=email,
+        address=diachi,
+        sex=gioitinh,
+        birthday=ngaysinh,
+        identity_card=cancuoc
+    )
+
+    try:
+        db.session.add(new_patient_info)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Lỗi thêm bệnh nhân: {e}")
+        db.session.rollback()
+        return False
+
+
+def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon, patient_id,chiphi):
+    new_medicine_detail = Medicine(
+        name=tenthuoc,
+        dosage=lieudung,
+        unit=donvi,
+        number_of_days=songay,
+        created_date=ngaykedon,
+        patient_id=patient_id,
+        price=chiphi# Luu ID benh nhan
+    )
+
+    try:
+        db.session.add(new_medicine_detail)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Lỗi thêm thuốc: {e}")
+        db.session.rollback()
+        return False
+
+
+def get_user_by_id(id):
+    return User.query.get(id)
+
+
+def count_medicines(q=None, patient_id=None):
+    query = Medicine.query
+    if patient_id:
+        query = query.filter(Medicine.patient_id == patient_id)
+
+    if q:
+        query = query.filter(Medicine.name.contains(q))
+
+    return query.count()
+
+def count_patients(q=None, patient_id=None):
+    query = Patient.query
+    if patient_id:
+        query = query.filter(Patient.patient_id == patient_id)
+
+    if q:
+        query=query.filter(Patient.name.contains(q))
+
+    return query.count()
+
+def count_treatmentsheets(q=None, patient_id=None):
+    query = TreatmentSheet.query
+
+    if patient_id:
+        query = query.filter(TreatmentSheet.patient_id == patient_id)
+
+    if q:
+        query = query.filter(TreatmentSheet.name.contains(q))
+
+    return query.count()
+
+
+def load_treatmentsheet(q=None, page=None, patient_id=None):
+    query = TreatmentSheet.query
+
+    # Neu co patient_id thi chi lay phieu cua benh nhan do
+    if patient_id:
+        query = query.filter(TreatmentSheet.patient_id == patient_id)
+
+    if q:
+        query = query.filter(TreatmentSheet.name.contains(q))
+
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)
+
+    return query.all()
+
+
+def load_patient(q=None, page=None):
+    query = Patient.query
+
+    if q:
+        query = query.filter(Patient.name.contains(q))
+
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)
+
+    return query.all()
+
+
+def load_services():
+    query = Services.query
+    return query.all()
+
+def load_medicine_category():
+    query = MedicineCategory.query
+    return query.all()
+
+def load_medicines(q=None, page=None, patient_id=None):
+    query = Medicine.query
+
+    if patient_id:
+        query = query.filter(Medicine.patient_id == patient_id)
+
+    if q:
+        query = query.filter(Medicine.name.contains(q))
+
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)
+
+    return query.all()
+def get_patient_by_name(name):
+    if not name:
+        return None
+    return Patient.query.filter(Patient.name == name.strip()).first()
+
+def get_patient_by_id(patient_id):
+    return Patient.query.get(patient_id)
+
+from models import Doctor, Invoice
+
+# ================= DOCTOR =================
+def load_doctors():
+    """Lấy danh sách bác sĩ"""
+    return Doctor.query.all()
+
+def get_doctor_by_id(doctor_id):
+    """Lấy thông tin bác sĩ theo ID"""
+    return Doctor.query.get(doctor_id)
+
+from sqlalchemy import or_
+from clinicapp import db
+from models import Invoice, Patient, Doctor
+
+# ================= INVOICE =================
+def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
+    """Thêm hóa đơn mới"""
+    inv = Invoice(
+        patient_id=patient_id,
+        doctor_id=doctor_id,
+        total_service=total_service,
+        total_medicine=total_medicine,
+        vat=vat,
+        total_payment=total_payment,
+        created_date=created_date
+    )
+    try:
+        db.session.add(inv)
+        db.session.commit()
+        return inv
+    except Exception as e:
+        print(f"Lỗi thêm hóa đơn: {e}")
+        db.session.rollback()
+        return None
+
+
+def load_invoices(keyword=None):
+    """Lấy danh sách hóa đơn, có thể tìm kiếm theo tên bệnh nhân hoặc bác sĩ"""
+    query = Invoice.query.join(Patient).join(Doctor)
+
+    if keyword:
+        keyword = f"%{keyword}%"
+        query = query.filter(
+            or_(Patient.name.ilike(keyword),
+                Doctor.name.ilike(keyword))
+        )
+
+    return query.order_by(Invoice.created_date.desc()).all()
+
+
+def get_invoice_by_id(invoice_id):
+    """Lấy hóa đơn theo ID"""
+    return Invoice.query.get(invoice_id)
+
+
+def update_invoice(invoice_id, doctor_id=None, total_service=None, total_medicine=None, vat=None, total_payment=None):
+    """Cập nhật hóa đơn"""
+    inv = Invoice.query.get(invoice_id)
+    if not inv:
+        return None
+
+    if doctor_id:
+        inv.doctor_id = doctor_id
+    if total_service is not None:
+        inv.total_service = total_service
+    if total_medicine is not None:
+        inv.total_medicine = total_medicine
+    if vat is not None:
+        inv.vat = vat
+    if total_payment is not None:
+        inv.total_payment = total_payment
+
+    try:
+        db.session.commit()
+        return inv
+    except Exception as e:
+        print(f"Lỗi cập nhật hóa đơn: {e}")
+        db.session.rollback()
+        return None
+
+
+def delete_invoice(invoice_id):
+    """Xóa hóa đơn"""
+    inv = Invoice.query.get(invoice_id)
+    if not inv:
+        return False
+
+    try:
+        db.session.delete(inv)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Lỗi xóa hóa đơn: {e}")
+        db.session.rollback()
+        return False
+
+from models import Doctor
+
+def add_doctor(name, specialty=None, phone_number=None, email=None):
+    new_doctor = Doctor(
+        name=name,
+        specialty=specialty,
+        phone_number=phone_number,
+        email=email
+    )
+    try:
+        db.session.add(new_doctor)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Lỗi thêm bác sĩ: {e}")
+        db.session.rollback()
+        return False
+
+def load_doctors(q=None, page=None):
+    query = Doctor.query
+    if q:
+        query = query.filter(Doctor.name.contains(q))
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)
+    return query.all()
+
+def count_doctors(q=None):
+    query = Doctor.query
+    if q:
+        query = query.filter(Doctor.name.contains(q))
+    return query.count()
+
+def delete_doctor(id):
+    doctor = Doctor.query.get(id)
+    if doctor:
+        try:
+            db.session.delete(doctor)
+            db.session.commit()
+            return True
+        except Exception as e:
+            print(f"Lỗi xóa bác sĩ: {e}")
+            db.session.rollback()
+            return False
+    return False
+
+
+if __name__ == '__main__':
+    with app.app_context():
+        print(auth_user("user", "123"))
+
+============================================================
+FILE: export.py
+============================================================
+import os
+
+# Tên file kết quả sẽ được tạo ra
+OUTPUT_FILE = 'project_full_code.txt'
+
+# Các thư mục cần BỎ QUA (không quét để tránh file rác/thư viện)
+IGNORE_DIRS = {'.git', '.idea', '__pycache__', 'venv', '.venv', 'images', 'node_modules', 'dist', 'build'}
+
+# Các đuôi file cần LẤY nội dung (bạn có thể thêm/bớt tùy ý)
+INCLUDE_EXTENSIONS = {'.py', '.html', '.css', '.js', '.json', '.sql', '.txt', '.md', '.xml'}
+
+
+def is_ignored(path):
+    """Kiểm tra xem đường dẫn có nằm trong danh sách bỏ qua không"""
+    parts = path.split(os.sep)
+    for part in parts:
+        if part in IGNORE_DIRS:
+            return True
+    return False
+
+
+def main():
+    project_root = os.getcwd()  # Lấy thư mục hiện tại đang chạy script
+
+    try:
+        with open(OUTPUT_FILE, 'w', encoding='utf-8') as outfile:
+            print(f"Đang quét thư mục: {project_root} ...\n")
+
+            # Duyệt qua tất cả thư mục và file
+            for root, dirs, files in os.walk(project_root):
+
+                # Loại bỏ các thư mục không mong muốn để không đi sâu vào
+                dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+
+                for file in files:
+                    file_path = os.path.join(root, file)
+
+                    # Bỏ qua chính file script này và file kết quả để tránh lặp vô tận
+                    if file in ['export_code.py', OUTPUT_FILE]:
+                        continue
+
+                    # Chỉ lấy các file có đuôi code nằm trong danh sách cho phép
+                    _, ext = os.path.splitext(file)
+                    if ext.lower() in INCLUDE_EXTENSIONS:
+
+                        # Tính đường dẫn tương đối để dễ đọc (ví dụ: saleapp/index.py)
+                        rel_path = os.path.relpath(file_path, project_root)
+
+                        if not is_ignored(rel_path):
+                            try:
+                                # Đọc nội dung file
+                                with open(file_path, 'r', encoding='utf-8') as f:
+                                    content = f.read()
+
+                                # Ghi vào file tổng hợp với định dạng rõ ràng
+                                outfile.write(f"\n{'=' * 60}\n")
+                                outfile.write(f"FILE: {rel_path}\n")
+                                outfile.write(f"{'=' * 60}\n")
+                                outfile.write(content + "\n")
+
+                                print(f"✅ Đã thêm: {rel_path}")
+                            except Exception as e:
+                                print(f"❌ Lỗi khi đọc file {rel_path}: {e}")
+
+        print(f"\n🎉 Xong! Toàn bộ code đã được lưu vào file: {OUTPUT_FILE}")
+        print("Bạn có thể mở file này hoặc gửi nó đi.")
+
+    except Exception as e:
+        print(f"Có lỗi xảy ra khi tạo file: {e}")
+
+
+if __name__ == '__main__':
+    main()
+
+============================================================
+FILE: index.py
+============================================================
+from datetime import date
+from flask import render_template, request, redirect, url_for, flash
+from clinicapp import dao, app, login, admin, db
+import math
+from flask_login import login_user, current_user, logout_user
+from clinicapp.dao import add_medicine_detail, delete_details, add_service_detail, add_patient_info
+import cloudinary.uploader
+from types import SimpleNamespace
+
+@app.route('/')
+def index():
+    pages = math.ceil(dao.count_medicines() / app.config["PAGE_SIZE"])
+    return render_template("index.html", pages=pages)
+
+
+@app.route('/delete-detail/<int:id>/<string:name>', methods=['POST'])
+def delete_detail(id, name):
+    if request.form.get('action') == 'delete_details':
+        if delete_details(id, name):
+            print('Xoa thong tin thanh cong')
+        else:
+            print('Loi khi xoa thong tin')
+    return redirect(request.referrer)
+
+
+@app.route('/patient_management', methods=['GET', 'POST'])
+def patient_management():
+    q = request.args.get('q')
+    page = request.args.get('page', 1, type=int)
+
+
+    pages = math.ceil(dao.count_patients() / app.config["PAGE_SIZE"])
+
+    if request.method == 'POST':
+        tenbenhnhan = request.form.get('tenbenhnhan')
+        ngaysinh = request.form.get('ngaysinh')
+        gioitinh = request.form.get('gioitinh')
+        sodienthoai = request.form.get('sodienthoai')
+        cancuoc = request.form.get('cancuoc')
+        email = request.form.get('email')
+        diachi = request.form.get('diachi')
+
+        if add_patient_info(tenbenhnhan=tenbenhnhan,
+                            ngaysinh=ngaysinh,
+                            gioitinh=gioitinh,
+                            sodienthoai=sodienthoai,
+                            cancuoc=cancuoc,
+                            email=email,
+                            diachi=diachi):
+            print('Them benh nhan thanh cong!')
+        else:
+            print('Loi khi them benh nhan!')
+
+    patient = dao.load_patient(q=q, page=page)
+    return render_template('pages/patient_management.html', pages=pages, page=page, patient=patient)
+
+
+@app.route('/cate_id/<int:id>', methods=['GET', 'POST'])
+def create_form(id):
+    q = request.args.get('q')
+    page = request.args.get('page', 1, type=int)
+
+
+    selected_patient_name = request.values.get('benhnhan')
+    selected_patient = None
+
+    if selected_patient_name:
+        selected_patient = dao.get_patient_by_name(selected_patient_name)
+
+    if (id == 2):
+        if request.method == 'POST' and 'dichvu' in request.form:
+            dichvu = request.form.get('dichvu')
+            dongia = request.form.get('dongia')
+            ghichu = request.form.get('ghichu')
+            ngaylapphieu = request.form.get('ngaylapphieu')
+
+            patient_id_hidden = request.form.get('patient_id_hidden')
+
+            if patient_id_hidden:
+                if add_service_detail(dichvu=dichvu,
+                                      dongia=dongia,
+                                      ghichu=ghichu,
+                                      ngaylapphieu=ngaylapphieu,
+                                      patient_id=patient_id_hidden):
+                    print('Them phieu thanh cong!')
+                else:
+                    print('Loi khi them phieu!')
+            else:
+                print('Chua chon benh nhan!')
+
+        today = date.today()
+        today_formatted = today.strftime('%Y-%m-%d')
+
+        p_id = selected_patient.id if selected_patient else None
+
+        all_patients = dao.load_patient(page=None)
+        treatm = dao.load_treatmentsheet(q=q, page=page, patient_id=p_id)
+        serv = dao.load_services()
+        total_sheets = dao.count_treatmentsheets(q=q, patient_id=p_id)
+        pages = math.ceil(total_sheets / app.config["PAGE_SIZE"])
+
+        return render_template("pages/tab1.html", treatm=treatm, q=q, pages=pages,
+                               serv=serv, patient=all_patients, selected_patient=selected_patient,today=today_formatted)
+
+    elif (id == 1):
+        return render_template("pages/tab2.html")
+
+    elif (id == 3):
+        if request.method == 'POST' and 'tenthuoc' in request.form:
+            tenthuoc = request.form.get('tenthuoc')
+            lieudung = request.form.get('lieudung')
+            donvi = request.form.get('donvi')
+            songay = request.form.get('songay')
+            ngaykedon = request.form.get('ngaykedon')
+            chiphi = request.form.get('chiphi')
+
+            # Lay ID benh nhan tu input an
+            patient_id_hidden = request.form.get('patient_id_hidden')
+
+            if patient_id_hidden:
+                if add_medicine_detail(tenthuoc=tenthuoc,
+                                       lieudung=lieudung,
+                                       donvi=donvi,
+                                       songay=songay,
+                                       ngaykedon=ngaykedon,
+                                       patient_id=patient_id_hidden,
+                                       chiphi=chiphi):
+                    print('Them thuoc thanh cong!')
+                else:
+                    print('Loi khi them thuoc!')
+            else:
+                print('Chua chon benh nhan!')
+
+        today = date.today()
+        today_formatted = today.strftime('%Y-%m-%d')
+
+        p_id = selected_patient.id if selected_patient else None
+
+        all_patients = dao.load_patient(page=None)
+        meds_cate=dao.load_medicine_category()
+        meds = dao.load_medicines(q=q, page=page, patient_id=p_id)
+        total_meds = dao.count_medicines(q=q, patient_id=p_id)
+        pages = math.ceil(total_meds / app.config["PAGE_SIZE"])
+
+        return render_template("pages/tab3.html", meds=meds, pages=pages,
+                               today=today_formatted, patient=all_patients, selected_patient=selected_patient,meds_cate=meds_cate)
+
+
+
+    elif id == 4:
+        all_patients = dao.load_patient(page=None)
+        doctors = dao.load_doctors()  # thêm dòng này
+
+        p_id = selected_patient.id if selected_patient else None
+        services = dao.load_treatmentsheet(patient_id=p_id) if p_id else []
+        medicines = dao.load_medicines(patient_id=p_id) if p_id else []
+
+        total_service = sum(float(s.price) for s in services)
+        total_medicine = sum(float(m.price) for m in medicines)
+        sub_total = total_service + total_medicine
+        vat = sub_total * 0.1
+        total_payment = sub_total + vat
+
+        return render_template(
+            "pages/tab4.html",
+            patient=all_patients,
+            doctors=doctors,  # truyền vào template
+            selected_patient=selected_patient,
+            services=services,
+            medicines=medicines,
+            total_service=total_service,
+            total_medicine=total_medicine,
+            vat=vat,
+            total_payment=total_payment
+        )
+
+    else:
+
+        return render_template("pages/tab5.html")
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    err_msg = None
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm = request.form.get('confirm')
+
+        if password == confirm:
+            name = request.form.get('name')
+            username = request.form.get('username')
+            avatar = request.files.get('avatar')
+
+            path_file = None
+            if avatar:
+                res = cloudinary.uploader.upload(avatar)
+                path_file = res['secure_url']
+
+            try:
+                dao.add_user(name, username, password, avatar=path_file)
+                return redirect('/login')
+            except:
+                db.session.rollback()
+                err_msg = "He thong dang co loi!"
+        else:
+            err_msg = "Mat khau khong khop!"
+    return render_template("register.html", err_msg=err_msg)
+
+
+@app.route('/login', methods=['get', 'post'])
+def login_my_user():
+    if current_user.is_authenticated:
+        return redirect('/')
+
+    err_msg = None
+
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = dao.auth_user(username, password)
+
+        if user:
+            login_user(user)
+            return redirect('/')
+        else:
+            err_msg = "Tài khoản hoặc mật khẩu không chính xác!"
+
+    return render_template("login.html", err_msg=err_msg)
+
+
+@app.route('/logout')
+def logout_my_user():
+    logout_user()
+    return redirect('/login')
+
+
+@app.context_processor
+def common_attribute():
+    return {
+        "cates": dao.load_categories(),
+    }
+
+
+@login.user_loader
+def get_user(user_id):
+    return dao.get_user_by_id(user_id)
+
+# Hàm chuyển đổi chuỗi tiền tệ sang float an toàn
+def to_float(v):
+    if v is None:
+        return 0
+    v = str(v).strip()
+    # bỏ dấu chấm ngăn cách hàng nghìn
+    v = v.replace('.', '')
+    # nếu có dấu phẩy thì đổi thành dấu chấm (trường hợp số thập phân)
+    v = v.replace(',', '.')
+    try:
+        return float(v)
+    except ValueError:
+        return 0
+
+@app.route('/cate_id/4', methods=['GET', 'POST'])
+def invoice_page():
+    # Danh sách bệnh nhân và bác sĩ
+    patients = dao.load_patient(page=None)
+    doctors = dao.load_doctors()
+
+    # Lấy dữ liệu từ form/URL
+    patient_id = request.args.get('patient_id')
+    doctor_id = request.form.get('doctor_id')
+    created_date = request.form.get('created_date') or date.today()
+
+    # Lấy thông tin bệnh nhân, dịch vụ, thuốc
+    selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
+    services = dao.load_treatmentsheet(patient_id=patient_id) if patient_id else []
+    medicines = dao.load_medicines(patient_id=patient_id) if patient_id else []
+
+    # Tính toán tổng tiền (dùng to_float để tránh lỗi)
+    total_service = sum(to_float(s.price) for s in services)
+    total_medicine = sum(to_float(m.price) for m in medicines)
+    vat = (total_service + total_medicine) * 0.1
+    total_payment = total_service + total_medicine + vat
+
+    # Nếu POST thì lưu hóa đơn
+    if request.method == 'POST' and patient_id and doctor_id:
+        dao.add_invoice(patient_id, doctor_id,
+                        total_service, total_medicine,
+                        vat, total_payment, created_date)
+        flash("Hóa đơn đã được lưu thành công!", "success")
+        return redirect(url_for('invoice_list'))
+
+    # Tạo đối tượng invoice để template dễ dùng
+    invoice = None
+    if selected_patient:
+        invoice = SimpleNamespace(
+            patient=selected_patient,
+            services=services,
+            medicines=medicines,
+            total_service=total_service,
+            total_medicine=total_medicine,
+            vat=vat,
+            total_payment=total_payment,
+            created_date=created_date
+        )
+
+    return render_template("pages/tab4.html",
+                           patients=patients,
+                           doctors=doctors,
+                           invoice=invoice,
+                           selected_doctor=dao.get_doctor_by_id(doctor_id) if doctor_id else None,
+                           today=date.today())
+
+
+@app.route('/invoices')
+def invoice_list():
+    keyword = request.args.get('keyword')
+    invoices = dao.load_invoices(keyword)
+    return render_template("pages/invoice_list.html", invoices=invoices)
+@app.route('/invoice/edit/<int:invoice_id>', methods=['GET', 'POST'])
+def edit_invoice(invoice_id):
+    invoice = dao.get_invoice_by_id(invoice_id)
+    doctors = dao.load_doctors()
+    if request.method == 'POST':
+        doctor_id = request.form.get('doctor_id')
+        dao.update_invoice(invoice_id, doctor_id=doctor_id)
+        flash("Hóa đơn đã được cập nhật!", "info")
+        return redirect(url_for('invoice_list'))
+    return render_template("pages/edit_invoice.html", invoice=invoice, doctors=doctors)
+@app.route('/invoice/delete/<int:invoice_id>', methods=['POST'])
+def delete_invoice(invoice_id):
+    if dao.delete_invoice(invoice_id):
+        flash("Đã xóa hóa đơn!", "danger")
+    else:
+        flash("Lỗi khi xóa hóa đơn!", "warning")
+    return redirect(url_for('invoice_list'))
+
+
+@app.route('/doctor_management', methods=['GET', 'POST'])
+def doctor_management():
+    q = request.args.get('q')
+    page = request.args.get('page', 1, type=int)
+
+    pages = math.ceil(dao.count_doctors(q=q) / app.config["PAGE_SIZE"])
+
+    if request.method == 'POST':
+        name = request.form.get('name')
+        specialty = request.form.get('specialty')
+        phone_number = request.form.get('phone_number')
+        email = request.form.get('email')
+
+        if dao.add_doctor(name=name, specialty=specialty, phone_number=phone_number, email=email):
+            flash("Thêm bác sĩ thành công!", "success")
+        else:
+            flash("Lỗi khi thêm bác sĩ!", "danger")
+
+    doctors = dao.load_doctors(q=q, page=page)
+    return render_template('pages/doctor_management.html', pages=pages, page=page, doctors=doctors)
+
+
+if __name__ == '__main__':
+    with app.app_context():
+        app.run(debug=True)
+
+============================================================
+FILE: models.py
+============================================================
+import json
+from datetime import datetime, date
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Enum, column, Date
+from sqlalchemy.orm import relationship
+from clinicapp import db, app
+from flask_login import UserMixin
+from enum import Enum as RoleEnum
+
+
+
+class UserEnum(RoleEnum):
+    USER = 1
+    ADMIN = 2
+
+class Base(db.Model):
+    __abstract__ = True
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(150), nullable=False)
+    active = Column(Boolean,default=True)
+    created_date= Column(DateTime,default=datetime.now())
+    def __str__(self):
+        return self.name
+
+class Patient(Base):
+    birthday=Column(Date)
+    sex=Column(String(150),nullable=False)
+    phone_number = Column(String(150),nullable=False)
+    identity_card=Column(String(150),nullable=False)
+    email=Column(String(150),nullable=False)
+    address=Column(String(150),nullable=False)
+
+    medicines = relationship('Medicine', backref='patient', lazy=True)
+    treatments = relationship('TreatmentSheet', backref='patient', lazy=True)
+
+class User(Base, UserMixin):
+    username=Column(String(150),unique=True,nullable=False)
+    password = Column(String(150),nullable=False)
+    avatar = Column(String(300),default="https://cdn-icons-png.flaticon.com/512/219/219969.png")
+    role = Column(Enum(UserEnum),nullable=False,default=UserEnum.USER)
+
+class TreatmentSheet(Base):
+    price= Column(String(150),nullable=False)
+    note=Column(String(150),nullable=False)
+
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+
+class Services(Base):
+    price = Column(String(150), nullable=False)
+
+class MedicineCategory(Base):
+    price = Column(String(150), nullable=False)
+    unit = Column(String(150),nullable=False)
+
+class Medicine(Base):
+    name = Column(String(150), nullable=False)
+    dosage= Column(Integer,default=0)
+    unit= Column(String(150),nullable=False)
+    number_of_days= Column(Integer, default=0)
+    price = Column(String(150), nullable=False)
+class Category(Base):
+    path= Column(String(150),nullable=False)
+    icon = Column(String(150),nullable=False)
+
+    def __str__(self):
+        return self.name
+
+
+
+
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+
+
+    def __str__(self):
+        return self.name
+
+
+class Doctor(Base):
+    __tablename__ = 'doctor'
+    specialty = Column(String(150), nullable=True)
+    phone_number = Column(String(50), nullable=True)
+    email = Column(String(100), nullable=True)
+
+    invoices = relationship('Invoice', backref='doctor', lazy=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Invoice(Base):
+    __tablename__ = 'invoice'
+    created_date = Column(Date, default=date.today)
+
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+    doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
+
+    total_service = Column(Integer, default=0)
+    total_medicine = Column(Integer, default=0)
+    vat = Column(Integer, default=0)
+    total_payment = Column(Integer, default=0)
+
+    patient = relationship('Patient', backref='invoices', lazy=True)
+
+    def __str__(self):
+        return f"Invoice #{self.id} - {self.patient.name}"
+
+
+
+
+if __name__ == '__main__':
+    with app.app_context():
+
+
+
+        #Lenh tao bang, comment de ko bi trung`
+        db.create_all()
+        c1 = Category(name="Đặt lịch",path="tab1.html",icon="calendar_month")
+        c2 = Category(name="Lập phiếu",path="tab2.html",icon="medical_information")
+        c3 = Category(name="Quản lý thuốc",path="tab3.html",icon="fluid_balance")
+        c4 = Category(name="Lập hóa đơn thanh toán",path="tab4.html",icon="credit_score")
+        c5 = Category(name="Báo cáo doanh thu",path="tab5.html",icon="chart_data")
+
+        # them noi dung tu file json > database
+        with open('data/medicine.json', encoding='utf-8') as f:
+            meds = json.load(f)
+
+            for m in meds:
+                db.session.add(Medicine(**m))
+
+        with open('data/medicine_category.json', encoding='utf-8') as f:
+            meds = json.load(f)
+
+            for m in meds:
+                db.session.add(MedicineCategory(**m))
+
+        with open('data/treatment_sheet.json', encoding='utf-8') as f:
+            treatm = json.load(f)
+
+            for t in treatm:
+                db.session.add(TreatmentSheet(**t))
+
+        with open('data/patient.json', encoding='utf-8') as f:
+            patient = json.load(f)
+
+            for p in patient:
+                db.session.add(Patient(**p))
+
+        with open('data/services.json', encoding='utf-8') as f:
+            serv = json.load(f)
+
+            for s in serv:
+                db.session.add(Services(**s))
+        #
+        # add c1,c2,.. vao db
+        db.session.add_all([c1, c2, c3, c4, c5])
+
+
+        import hashlib
+
+        u = User(name="User",username="user",password=str(hashlib.md5("123".encode("utf-8")).hexdigest()))
+
+        db.session.add(u)
+        u1 = User(name="Admin",username="admin",password=str(hashlib.md5("123".encode("utf-8")).hexdigest()),role=UserEnum.ADMIN)
+
+        db.session.add(u1)
+
+        # chay lenh, (phai chay moi cap nhat trong database, tuong tu nhu execute)
+
+        db.session.commit()
+
+
+============================================================
+FILE: __init__.py
+============================================================
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin
+import cloudinary
+
+app = Flask(__name__)
+
+app.secret_key = "asbvasdasmdasm$#!"
+app.config["SQLALCHEMY_DATABASE_URI"] ="mysql+pymysql://root:Abc123@localhost/clinicdb?charset=utf8mb4"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.config["PAGE_SIZE"]=9
+
+cloudinary.config(cloud_name='dokabu3ng',
+                  api_key='577294329223111',
+                  api_secret='FR262rDX7cNVj64RyjoKc-kdZx8')
+
+
+db = SQLAlchemy(app)
+
+login = LoginManager(app)
+
+============================================================
+FILE: data\category.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Đặt lịch",
+    "path": "tab1.html",
+    "icon": "calendar_month"
+  },
+  {
+    "id": 2,
+    "name": "Lập phiếu",
+    "path": "tab2.html",
+    "icon": "medical_information"
+  },
+  {
+    "id": 3,
+    "name": "Quản lý thuốc",
+    "path": "tab3.html",
+    "icon": "fluid_balance"
+  },
+  {
+    "id": 4,
+    "name": "Lập hóa đơn thanh toán",
+    "path": "tab4.html",
+    "icon": "credit_score"
+  },
+  {
+    "id": 5,
+    "name": "Báo cáo doanh thu",
+    "path": "tab5.html",
+    "icon": "chart_data"
+  }
+]
+
+============================================================
+FILE: data\medicine.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "20.000",
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
+  },
+  {
+    "id": 2,
+    "name": "Amoxicillin 500mg",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 7,
+    "price": "70.000",
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
+  },
+  {
+    "id": 3,
+    "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "45.000",
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
+  },
+  {
+    "id": 4,
+    "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "price": "20.000",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
+  },
+  {
+    "id": 5,
+    "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "9.000",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
+  },
+  {
+    "id": 6,
+    "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "price": "210.000",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
+  },
+  {
+    "id": 7,
+    "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "18.000",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
+  },
+  {
+    "id": 8,
+    "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "price": "168.000",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
+  },
+  {
+    "id": 9,
+    "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "140.000",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
+  },
+  {
+    "id": 10,
+    "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "20.000",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
+  },
+  {
+    "id": 11,
+    "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "price": "28.000",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
+  },
+  {
+    "id": 12,
+    "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "price": "70.000",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
+  },
+  {
+    "id": 13,
+    "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 3,
+    "price": "12.000",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
+  },
+  {
+    "id": 14,
+    "name": "Amoxicillin 500mg",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "50.000",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
+  },
+  {
+    "id": 15,
+    "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "45.000",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
+  },
+  {
+    "id": 16,
+    "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "price": "20.000",
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 17,
+    "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "9.000",
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 18,
+    "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "price": "210.000",
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 19,
+    "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "18.000",
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 20, "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "price": "168.000",
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 21, "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "140.000",
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 22, "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "20.000",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00",
+    "active": true
+  },
+  {
+    "id": 23, "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "price": "28.000",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00",
+    "active": true
+  },
+  {
+    "id": 24, "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "price": "70.000",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00",
+    "active": true
+  },
+  {
+    "id": 25, "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 3,
+    "price": "12.000",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 26, "name": "Amoxicillin 500mg",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "50.000",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 27, "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "45.000",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 28, "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "price": "20.000",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 29, "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "9.000",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 30, "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "price": "210.000",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 31, "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "18.000",
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 32, "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "price": "168.000",
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 33, "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "140.000",
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 34, "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "20.000",
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 35, "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "price": "28.000",
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 36, "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "price": "70.000",
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 37, "name": "Paracetamol 500mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 3,
+    "price": "12.000",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 38, "name": "Amoxicillin 500mg",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "50.000",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 39, "name": "Alphachymotrypsin",
+    "dosage": 2,
+    "unit": "viên/lần",
+    "number_of_days": 5,
+    "price": "45.000",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 40, "name": "Vitamin C 500mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 10,
+    "price": "20.000",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 41, "name": "Panadol Extra",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "9.000",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 42, "name": "Gaviscon",
+    "dosage": 2,
+    "unit": "gói/ngày",
+    "number_of_days": 7,
+    "price": "210.000",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 43, "name": "Efferalgan 500mg",
+    "dosage": 1,
+    "unit": "viên/lần",
+    "number_of_days": 3,
+    "price": "18.000",
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 44, "name": "Augmentin 625mg",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 7,
+    "price": "168.000",
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 45, "name": "Klamentin 1g",
+    "dosage": 2,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "140.000",
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 46, "name": "Medrol 16mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 5,
+    "price": "20.000",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  },
+  {
+    "id": 47, "name": "Omeprazol 20mg",
+    "dosage": 1,
+    "unit": "viên/ngày",
+    "number_of_days": 14,
+    "price": "28.000",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  },
+  {
+    "id": 48, "name": "Nước muối sinh lý",
+    "dosage": 1,
+    "unit": "chai/ngày",
+    "number_of_days": 7,
+    "price": "70.000",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  }
+]
+
+============================================================
+FILE: data\medicine_category.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Paracetamol 500mg",
+    "price": "5.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 2,
+    "name": "Amoxicillin 500mg",
+    "price": "10.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 3,
+    "name": "Alphachymotrypsin",
+    "price": "8.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 4,
+    "name": "Vitamin C 500mg",
+    "price": "2.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 5,
+    "name": "Panadol Extra",
+    "price": "3.000",
+    "unit": "viên/lần"
+  },
+  {
+    "id": 6,
+    "name": "Gaviscon",
+    "price": "15.000",
+    "unit": "gói/ngày"
+  },
+  {
+    "id": 7,
+    "name": "Augmentin 625mg",
+    "price": "12.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 8,
+    "name": "Klamentin 1g",
+    "price": "14.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 9,
+    "name": "Medrol 16mg",
+    "price": "4.000",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 10,
+    "name": "Omeprazol 20mg",
+    "price": "1.500",
+    "unit": "viên/ngày"
+  },
+  {
+    "id": 11,
+    "name": "Nước muối sinh lý",
+    "price": "10.000",
+    "unit": "chai/ngày"
+  },
+  {
+    "id": 12,
+    "name": "Smecta",
+    "price": "5.000",
+    "unit": "gói/ngày"
+  },
+  {
+    "id": 13,
+    "name": "Berberin",
+    "price": "25.000",
+    "unit": "lọ/đợt"
+  },
+  {
+    "id": 14,
+    "name": "Efferalgan 500mg",
+    "price": "6.000",
+    "unit": "viên/lần"
+  },
+  {
+    "id": 15,
+    "name": "Oresol",
+    "price": "3.000",
+    "unit": "gói/ngày"
+  }
+]
+
+============================================================
+FILE: data\patient.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Hoàng Việt Tuấn",
+    "birthday": "2025-01-01",
+    "sex": "Nam",
+    "phone_number": "0777288270",
+    "identity_card": "079205002801",
+    "email": "tuanhoang5050@gmail.com",
+    "address": "1007/64 Lạc Long Quân, Phường Bảy Hiền, TP. Hồ Chí Minh"
+  },
+    {
+    "id": 2,
+    "name": "Nguyễn Thị Mai Anh",
+    "birthday": "1998-05-12",
+    "sex": "Nữ",
+    "phone_number": "0909123456",
+    "identity_card": "079198001234",
+    "email": "maianh.nguyen98@gmail.com",
+    "address": "256 Nguyễn Văn Cừ, Phường Nguyễn Cư Trinh, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 3,
+    "name": "Trần Văn Hùng",
+    "birthday": "1985-11-20",
+    "sex": "Nam",
+    "phone_number": "0918887766",
+    "identity_card": "079085009876",
+    "email": "hungtran85@yahoo.com",
+    "address": "45 Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 4,
+    "name": "Lê Thị Thu Hà",
+    "birthday": "2000-03-08",
+    "sex": "Nữ",
+    "phone_number": "0933445566",
+    "identity_card": "079300005678",
+    "email": "thuha.le2000@outlook.com",
+    "address": "123 Đường 3/2, Phường 11, Quận 10, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 5,
+    "name": "Phạm Minh Tuấn",
+    "birthday": "1992-09-15",
+    "sex": "Nam",
+    "phone_number": "0977112233",
+    "identity_card": "079092004321",
+    "email": "minhtuan.pham@company.vn",
+    "address": "89 Cách Mạng Tháng 8, Phường 13, Quận 10, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 6,
+    "name": "Vũ Thị Ngọc Lan",
+    "birthday": "1975-07-25",
+    "sex": "Nữ",
+    "phone_number": "0988990011",
+    "identity_card": "023175001122",
+    "email": "ngoclan.vu75@gmail.com",
+    "address": "56 Hoàng Diệu, Phường 12, Quận 4, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 7,
+    "name": "Đặng Quốc Bảo",
+    "birthday": "2005-12-30",
+    "sex": "Nam",
+    "phone_number": "0366778899",
+    "identity_card": "079205008899",
+    "email": "quocbao.dang05@student.edu.vn",
+    "address": "101 Đinh Tiên Hoàng, Phường Đa Kao, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 8,
+    "name": "Bùi Thị Thanh Tâm",
+    "birthday": "1988-02-14",
+    "sex": "Nữ",
+    "phone_number": "0945678901",
+    "identity_card": "079188007766",
+    "email": "thanhtam.bui@hotmail.com",
+    "address": "33 Phan Xích Long, Phường 2, Quận Phú Nhuận, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 9,
+    "name": "Ngô Văn Long",
+    "birthday": "1995-06-01",
+    "sex": "Nam",
+    "phone_number": "0966554433",
+    "identity_card": "079095003344",
+    "email": "long.ngo95@tech.com",
+    "address": "789 Phạm Văn Đồng, Phường Hiệp Bình Chánh, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 10,
+    "name": "Đỗ Thị Hồng Nhung",
+    "birthday": "1990-10-10",
+    "sex": "Nữ",
+    "phone_number": "0901239876",
+    "identity_card": "079190005566",
+    "email": "hongnhung.do@agency.vn",
+    "address": "12 Tôn Đản, Phường 13, Quận 4, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 11,
+    "name": "Hồ Minh Khang",
+    "birthday": "1980-04-30",
+    "sex": "Nam",
+    "phone_number": "0912345678",
+    "identity_card": "079080001122",
+    "email": "minhkhang.ho@realestate.com",
+    "address": "67 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 12,
+    "name": "Lý Thị Kim Oanh",
+    "birthday": "1999-01-20",
+    "sex": "Nữ",
+    "phone_number": "0388997766",
+    "identity_card": "079199009988",
+    "email": "kimoanh.ly99@gmail.com",
+    "address": "234 Võ Văn Ngân, Phường Linh Chiểu, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 13,
+    "name": "Trương Tấn Phát",
+    "birthday": "2002-08-15",
+    "sex": "Nam",
+    "phone_number": "0707112233",
+    "identity_card": "079202004455",
+    "email": "tanphat.truong@university.edu.vn",
+    "address": "55 Lê Văn Việt, Phường Tăng Nhơn Phú A, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 14,
+    "name": "Dương Thị Mỹ Linh",
+    "birthday": "1993-11-05",
+    "sex": "Nữ",
+    "phone_number": "0933998877",
+    "identity_card": "079193006677",
+    "email": "mylinh.duong@fashion.vn",
+    "address": "90 Hai Bà Trưng, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 15,
+    "name": "Võ Văn Hậu",
+    "birthday": "1982-12-22",
+    "sex": "Nam",
+    "phone_number": "0987654321",
+    "identity_card": "079082002233",
+    "email": "vanhau.vo@construction.com",
+    "address": "150 Nguyễn Oanh, Phường 7, Quận Gò Vấp, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 16,
+    "name": "Mai Thị Tuyết Lan",
+    "birthday": "1978-05-05",
+    "sex": "Nữ",
+    "phone_number": "0911223344",
+    "identity_card": "079078005544",
+    "email": "tuyetlan.mai@shop.vn",
+    "address": "30 Quang Trung, Phường 10, Quận Gò Vấp, TP. Hồ Chí Minh"
+  }
+]
+
+============================================================
+FILE: data\services.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Trám răng (Composite)",
+    "price": "300.000"
+  },
+  {
+    "id": 2,
+    "name": "Nhổ răng sữa",
+    "price": "50.000"
+  },
+  {
+    "id": 3,
+    "name": "Nhổ răng vĩnh viễn",
+    "price": "450.000"
+  },
+  {
+    "id": 4,
+    "name": "Lấy tủy răng (Nội nha)",
+    "price": "900.000"
+  },
+  {
+    "id": 5,
+    "name": "Cạo vôi răng (Đánh bóng)",
+    "price": "250.000"
+  },
+  {
+    "id": 6,
+    "name": "Tẩy trắng răng (Tại phòng)",
+    "price": "1.500.000"
+  },
+  {
+    "id": 7,
+    "name": "Tiểu phẫu răng khôn (Mọc thẳng)",
+    "price": "1.000.000"
+  },
+  {
+    "id": 8,
+    "name": "Phẫu thuật răng khôn (Mọc lệch)",
+    "price": "2.500.000"
+  },
+  {
+    "id": 9,
+    "name": "Bọc răng sứ Kim loại (Titan)",
+    "price": "2.000.000"
+  },
+  {
+    "id": 10,
+    "name": "Bọc răng sứ Toàn sứ (Cercon)",
+    "price": "5.500.000"
+  },
+  {
+    "id": 11,
+    "name": "Dán sứ Veneer",
+    "price": "6.000.000"
+  },
+  {
+    "id": 12,
+    "name": "Chụp X-quang Panorex",
+    "price": "150.000"
+  },
+  {
+    "id": 13,
+    "name": "Niềng răng mắc cài kim loại",
+    "price": "25.000.000"
+  },
+  {
+    "id": 14,
+    "name": "Cấy ghép Implant (Hàn Quốc)",
+    "price": "14.000.000"
+  },
+  {
+    "id": 15,
+    "name": "Điều trị viêm nướu/Nha chu",
+    "price": "500.000"
+  }
+]
+
+============================================================
+FILE: data\treatment_sheet.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu răng nhẹ",
+    "patient_id": 1,
+    "created_date": "2025-01-10 08:30:00",
+    "active": true
+  },
+  {
+    "id": 2,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ 6 tháng",
+    "patient_id": 1,
+    "created_date": "2025-01-10 09:00:00",
+    "active": true
+  },
+  {
+    "id": 3,
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra tủy",
+    "patient_id": 1,
+    "created_date": "2025-01-10 09:30:00",
+    "active": true
+  },
+  {
+    "id": 4,
+    "name": "Nhổ răng sữa",
+    "price": "50.000",
+    "note": "Răng lung lay",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:15:00",
+    "active": true
+  },
+  {
+    "id": 5,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ 6 tháng",
+    "patient_id": 2,
+    "created_date": "2025-01-11 09:45:00",
+    "active": true
+  },
+  {
+    "id": 6,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu răng nhẹ",
+    "patient_id": 2,
+    "created_date": "2025-01-11 10:15:00",
+    "active": true
+  },
+  {
+    "id": 7,
+    "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Mọc lệch 90 độ",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:00:00",
+    "active": true
+  },
+  {
+    "id": 8,
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra trước nhổ",
+    "patient_id": 3,
+    "created_date": "2025-01-12 10:30:00",
+    "active": true
+  },
+  {
+    "id": 9,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh trước nhổ",
+    "patient_id": 3,
+    "created_date": "2025-01-12 11:00:00",
+    "active": true
+  },
+  {
+    "id": 10,
+    "name": "Tẩy trắng răng",
+    "price": "1.500.000",
+    "note": "Công nghệ Laser",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:20:00",
+    "active": true
+  },
+  {
+    "id": 11,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh trước tẩy",
+    "patient_id": 4,
+    "created_date": "2025-01-13 14:50:00",
+    "active": true
+  },
+  {
+    "id": 12,
+    "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Sứ Titan",
+    "patient_id": 4,
+    "created_date": "2025-01-13 15:20:00",
+    "active": true
+  },
+  {
+    "id": 13,
+    "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Viêm tủy cấp",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:00:00",
+    "active": true
+  },
+  {
+    "id": 14,
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra tủy",
+    "patient_id": 5,
+    "created_date": "2025-01-14 08:30:00",
+    "active": true
+  },
+  {
+    "id": 15,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Trám bít ống tủy",
+    "patient_id": 5,
+    "created_date": "2025-01-14 09:00:00",
+    "active": true
+  },
+  {
+    "id": 16,
+    "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Mọc ngầm",
+    "patient_id": 6,
+    "created_date": "2025-01-15 15:30:00",
+    "active": true
+  },
+  {
+    "id": 17,
+    "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Panorama",
+    "patient_id": 6,
+    "created_date": "2025-01-15 16:00:00",
+    "active": true
+  },
+  {
+    "id": 18,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ",
+    "patient_id": 6,
+    "created_date": "2025-01-15 16:30:00",
+    "active": true
+  },
+  {
+    "id": 19,
+    "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Răng cửa",
+    "patient_id": 7,
+    "created_date": "2025-01-16 09:45:00",
+    "active": true
+  },
+  {
+    "id": 20,
+    "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Răng số 6",
+    "patient_id": 7,
+    "created_date": "2025-01-16 10:15:00",
+    "active": true
+  },
+  {
+    "id": 21,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Răng số 7",
+    "patient_id": 7,
+    "created_date": "2025-01-16 10:45:00",
+    "active": true
+  },
+  {
+    "id": 22,
+    "name": "Tẩy trắng răng",
+    "price": "1.500.000",
+    "note": "Tại phòng khám",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:10:00",
+    "active": true
+  },
+  {
+    "id": 23,
+    "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Đánh bóng",
+    "patient_id": 8,
+    "created_date": "2025-01-17 11:40:00",
+    "active": true
+  },
+  {
+    "id": 24,
+    "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Mòn cổ chân răng",
+    "patient_id": 8,
+    "created_date": "2025-01-17 12:10:00",
+    "active": true
+  },
+  {
+    "id": 25,
+    "name": "Nhổ răng sữa",
+    "price": "50.000",
+    "note": "Răng lung lay",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:00:00",
+    "active": true
+  },
+  {
+    "id": 26, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu răng hàm",
+    "patient_id": 9,
+    "created_date": "2025-01-18 13:30:00",
+    "active": true
+  },
+  {
+    "id": 27, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 9,
+    "created_date": "2025-01-18 14:00:00",
+    "active": true
+  },
+  {
+    "id": 28, "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Răng số 5",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:20:00",
+    "active": true
+  },
+  {
+    "id": 29, "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Kiểm tra",
+    "patient_id": 10,
+    "created_date": "2025-01-19 16:50:00",
+    "active": true
+  },
+  {
+    "id": 30, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Hoàn tất điều trị tủy",
+    "patient_id": 10,
+    "created_date": "2025-01-19 17:20:00",
+    "active": true
+  },
+  {
+    "id": 31, "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Hàm dưới trái",
+    "patient_id": 11,
+    "created_date": "2025-01-20 08:45:00",
+    "active": true
+  },
+  {
+    "id": 32, "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Panorama",
+    "patient_id": 11,
+    "created_date": "2025-01-20 09:15:00",
+    "active": true
+  },
+  {
+    "id": 33, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 11,
+    "created_date": "2025-01-20 09:45:00",
+    "active": true
+  },
+  {
+    "id": 34, "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Răng hàm",
+    "patient_id": 12,
+    "created_date": "2025-01-21 10:30:00",
+    "active": true
+  },
+  {
+    "id": 35, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Răng kế bên",
+    "patient_id": 12,
+    "created_date": "2025-01-21 11:00:00",
+    "active": true
+  },
+  {
+    "id": 36, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ",
+    "patient_id": 12,
+    "created_date": "2025-01-21 11:30:00",
+    "active": true
+  },
+  {
+    "id": 37, "name": "Tẩy trắng răng",
+    "price": "1.500.000",
+    "note": "Laser Whitening",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:00:00",
+    "active": true
+  },
+  {
+    "id": 38, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Làm sạch",
+    "patient_id": 13,
+    "created_date": "2025-01-22 14:30:00",
+    "active": true
+  },
+  {
+    "id": 39, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Sâu nhẹ",
+    "patient_id": 13,
+    "created_date": "2025-01-22 15:00:00",
+    "active": true
+  },
+  {
+    "id": 40, "name": "Nhổ răng sữa",
+    "price": "50.000",
+    "note": "Răng cửa",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:15:00",
+    "active": true
+  },
+  {
+    "id": 41, "name": "Trám răng (Composite)",
+    "price": "300.000",
+    "note": "Răng hàm",
+    "patient_id": 14,
+    "created_date": "2025-01-23 09:45:00",
+    "active": true
+  },
+  {
+    "id": 42, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Định kỳ",
+    "patient_id": 14,
+    "created_date": "2025-01-23 10:15:00",
+    "active": true
+  },
+  {
+    "id": 43, "name": "Điều trị tủy",
+    "price": "900.000",
+    "note": "Răng số 7",
+    "patient_id": 15,
+    "created_date": "2025-01-24 16:45:00",
+    "active": true
+  },
+  {
+    "id": 44, "name": "Bọc răng sứ",
+    "price": "2.000.000",
+    "note": "Sau chữa tủy",
+    "patient_id": 15,
+    "created_date": "2025-01-24 17:15:00",
+    "active": true
+  },
+  {
+    "id": 45, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 15,
+    "created_date": "2025-01-24 17:45:00",
+    "active": true
+  },
+  {
+    "id": 46, "name": "Nhổ răng khôn",
+    "price": "1.500.000",
+    "note": "Hàm trên phải",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:20:00",
+    "active": true
+  },
+  {
+    "id": 47, "name": "Chụp X-quang",
+    "price": "150.000",
+    "note": "Panorama",
+    "patient_id": 16,
+    "created_date": "2025-01-25 11:50:00",
+    "active": true
+  },
+  {
+    "id": 48, "name": "Cạo vôi răng",
+    "price": "250.000",
+    "note": "Vệ sinh",
+    "patient_id": 16,
+    "created_date": "2025-01-25 12:20:00",
+    "active": true
+  }
+]
+
+============================================================
+FILE: static\login.css
+============================================================
+* {
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family: "Momo Trust Display",sans-serif;
+}
+
+body {
+display:flex;
+justify-content:center;
+align-items: center;
+background: url('https://img.freepik.com/free-photo/plain-smooth-green-wall-texture_53876-129746.jpg?semt=ais_hybrid&w=740&q=80') no-repeat;
+background-size:cover;
+-height:100vh;
+}
+
+.wrapper {
+margin-top: 220px;
+width: 450px;
+background:#1A4861;
+background: transparent;
+backdrop-filter: blur(25px);
+box-shadow: 0 0 10px rgba(0,0,0,.2);
+border: 2px solid rgba(255,255,255,.2);
+color: white;
+border-radius: 10px;
+padding: 30px 40px;
+}
+
+.wrapper h1{
+text-shadow: 2px 2px 4px black;
+font-size: 36px;
+text-align:center;
+
+}
+
+.wrapper .input-box {
+  position: relative;
+  width: 100%;
+  height: 50px;
+  margin: 30px 0;
+
+}
+
+
+.input-box input {
+text-shadow: 2px 2px 4px black;
+width: 100%;
+height: 100%;
+background: transparent;
+border: none;
+outline: none;
+border: 2px solid rgba(255,255,255,.2);
+border-radius: 40px;
+font-size:16px;
+color: white;
+padding: 20px 45px 20px 20px;
+
+}
+
+.input-box input::placeholder {
+    color: #fff;
+}
+
+.input-box .material-symbols-rounded {
+position: absolute;
+right:20px;
+top: 50%;
+transform: translateY(-50%);
+font-size: 25px;
+}
+
+.wrapper .remember-forgot {
+display: flex;
+justify-content: space-between;
+font-size: 14.5px;
+margin: -15px 0 15px;
+}
+
+.remember-forgot label input {
+accent-color: #fff;
+margin-right: 3px;
+}
+
+.remember-forgot a {
+color: #fff;
+text-decoration: none;
+}
+
+.remember-forgot a:hover{
+text-decoration: underline;
+
+}
+
+.wrapper .btn {
+width:100%;
+height: 45px;
+background: #fff;
+border:none;
+outline:none;
+border-radius: 40px;
+box-shadow: 0 0 10px rgba(0,0,0,.1);
+cursor: pointer;
+font-size: 16px;
+color: #333;
+font-weight: 600;
+}
+
+
+.wrapper .register-link {
+font-size: 14.5px;
+text-align: center;
+margin-top:20px;
+}
+
+.register-link p a {
+color: #fff;
+text-decoration: none;
+font-weight: 600;
+}
+
+.register-link p a:hover {
+text-decoration: underline;
+}
+
+#avatar {
+    padding: 10px 25px 5px ;
+
+}
+
+============================================================
+FILE: static\style.css
+============================================================
+@import url('https://fonts.googleapis.com/css2?family=Momo+Trust+Display&display=swap');
+
+* {
+    font-family: "Momo Trust Display", sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.navbar-collapse .login {
+    border-radius: 10px;
+    height: 40%;
+    width: 8%;
+    margin-right: 40px;
+    color: white;
+    border-color: inherit;
+    text-decoration: none;
+    background-color: #102c3c;
+}
+
+.navbar-collapse .logout {
+    text-decoration: none;
+    border-radius: 10px;
+    height: 40%;
+    width: 8%;
+    margin-right: 25px;
+    color: white;
+    border-color: inherit;
+    background-color: #102c3c;
+}
+
+.navbar-collapse.navbar-nav {
+    gap: 12px;
+}
+
+.navbar-nav .material-symbols-rounded {
+    vertical-align: middle;
+}
+
+.sidebar {
+    width: 200px;
+    position: fixed;
+    background: #102c3c;
+    float: left;
+    height: 140vh;
+    position: static;
+}
+
+.login a {
+    text-decoration: none;
+    color: white;
+}
+
+.logout a {
+    text-decoration: none;
+    color: white;
+}
+
+.sidebar-header {
+    display: flex;
+    padding: 25px 20px;
+    /*align-items: center;*/
+    justify-content: space-between;
+    height: 100%;
+}
+
+.row.align-items-end.mb-4 label {
+    color: #1E7BD0;
+}
+
+.app-container {
+    background-color: #ffffff;
+    list-style: none;
+    display: flex;
+    gap: 2px;
+    padding: 0 0px;
+    flex-direction: column;
+}
+
+.sidebar-nav .nav-list {
+    list-style: none;
+    display: flex;
+    gap: 2px;
+    padding: 0 0px;
+    flex-direction: column;
+}
+
+.sidebar-header .header-logo img {
+    width: 46px;
+    height: 46px;
+    display: block;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.body {
+    background-color: #102c3c;
+}
+
+.sidebar-nav .nav-link {
+    color: #fff;
+    padding: 12px 15px;
+    display: flex;
+    gap: 12px;
+    transition: 0.4s ease;
+    text-decoration: none;
+}
+
+.sidebar-nav .nav-link:hover {
+    color: #151A2D;
+    background: #fff;
+    border-radius: 10px;
+}
+
+.fa-dumpster-fire {
+    font-size: 35px;
+}
+
+.fa-cart-shopping {
+    font-size: 25px;
+    margin-right: 5px
+}
+
+.fa-user {
+    font-size: 25px;
+    margin-right: 5px;
+}
+
+.container-fluid {
+    gap: 7px;
+}
+
+.discount a {
+    font-size: 25px;
+    color: white !important;
+}
+
+.fa-teeth {
+    font-size: 35px;
+    margin-right: 5px
+}
+
+.discount {
+    margin: 0 auto;
+}
+
+.treatment-form-wrapper {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    background-color: white;
+    max-width: 1640px;
+    margin: 20px auto;
+    height: 90%;
+    margin-left: 240px;
+}
+
+.table .material-symbols-rounded {
+    font-size: 18px;
+}
+
+.table .material-symbols-rounded:hover {
+    font-size: 22px;
+}
+
+.material-symbols-rounded {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.action-bar {
+    align-items: center;
+}
+
+.treat-action {
+    white-space: nowrap;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    display: flex;
+    height: 37px;
+}
+
+.navbar-nav li:hover a {
+    color: #1E7BD0 !important;
+}
+
+.navbar-collapse a:hover {
+    color: #1E7BD0 !important;
+}
+
+.navbar-collapse button a:hover {
+    color: #fff !important;
+}
+
+    .hover-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
+    }
+
+
+============================================================
+FILE: templates\index.html
+============================================================
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #f8f9fa">
+
+<div class="treatment-form-wrapper p-0 overflow-hidden">
+    <div class="row g-0 align-items-center bg-white">
+        <div class="col-md-6 p-5">
+            <h1 class="display-4 fw-bold text-primary mb-3" style="color: #102c3c !important;">
+                <span class="material-symbols-rounded me-2" style="font-size: 48px; vertical-align: bottom;">oral_disease</span>
+                Teeth Tooth Clinic
+            </h1>
+            <h3 class="text-secondary mb-4">Nụ cười của bạn là niềm hạnh phúc của chúng tôi</h3>
+            <p class="lead text-muted mb-4">
+                Chào mừng đến với hệ thống quản lý phòng khám nha khoa hiện đại.
+                Chúng tôi cung cấp các dịch vụ chăm sóc răng miệng toàn diện với đội ngũ bác sĩ tận tâm và trang thiết bị tiên tiến nhất.
+            </p>
+            <div class="d-flex gap-3">
+                <a href="/cate_id/1" class="btn btn-primary btn-lg rounded-pill px-4" style="background-color: #102c3c; border: none;">
+                    Đặt lịch ngay
+                </a>
+                <a href="#services" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                    Xem dịch vụ
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <img src="https://static.vecteezy.com/system/resources/previews/006/484/963/non_2x/oral-health-checkup-of-dentist-scene-with-woman-patient-in-chair-dental-office-with-patient-and-doctor-cartoon-characters-flat-illustration-isolated-on-white-background-vector.jpg"
+                 alt="Phòng khám nha khoa"
+                 class="img-fluid w-100"
+                 style="object-fit: cover; height: 80%; max-height: 350px;">
+        </div>
+    </div>
+
+    <div id="services" class="p-5" style="background-color: #f0f4f8;">
+        <div class="row g-4">
+            <!-- Card 1 -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <span class="material-symbols-rounded text-primary mb-3" style="font-size: 48px;">dentistry</span>
+                        <h5 class="card-title fw-bold">Khám & Điều trị Tổng quát</h5>
+                        <p class="card-text text-muted">Kiểm tra sức khỏe răng miệng định kỳ, cạo vôi răng, trám răng thẩm mỹ và điều trị tủy.</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <span class="material-symbols-rounded text-success mb-3" style="font-size: 48px;">child_care</span>
+                        <h5 class="card-title fw-bold">Nha khoa Trẻ em</h5>
+                        <p class="card-text text-muted">Chăm sóc răng miệng cho bé, nhổ răng sữa nhẹ nhàng, bôi vecni flour ngừa sâu răng.</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <span class="material-symbols-rounded text-warning mb-3" style="font-size: 48px;">diamond</span>
+                        <h5 class="card-title fw-bold">Nha khoa Thẩm mỹ</h5>
+                        <p class="card-text text-muted">Tẩy trắng răng công nghệ cao, bọc răng sứ, dán sứ Veneer mang lại nụ cười rạng rỡ.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row bg-white py-5 text-center g-0">
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">15+</h3>
+            <p class="text-muted">Năm kinh nghiệm</p>
+        </div>
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">5000+</h3>
+            <p class="text-muted">Bệnh nhân hài lòng</p>
+        </div>
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">100%</h3>
+            <p class="text-muted">Thiết bị hiện đại</p>
+        </div>
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">24/7</h3>
+            <p class="text-muted">Hỗ trợ tư vấn</p>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+{%endblock%}
+
+============================================================
+FILE: templates\login.html
+============================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang chủ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+          integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="../../static/login.css">
+
+</head>
+
+{%block content%}
+
+{%if err_msg%}
+<div class="alert alert-danger">{{err_msg}}</div>
+
+{%endif%}
+<body>
+    <div class="wrapper">
+
+        <form method="POST">
+            <h1>Đăng nhập</h1>
+            <div class="input-box">
+                <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required>
+                <span class="material-symbols-rounded me-2">person</span>
+            </div>
+            <div class="input-box">
+                <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+                <span class="material-symbols-rounded me-2">lock</span>
+            </div>
+
+            <div class="remember-forgot">
+                <label><input type="checkbox">Ghi nhớ đăng nhập</label>
+                <a href="#">Quên mật khẩu</a>
+            </div>
+
+            <button type="submit" class="btn">Đăng nhập</button>
+
+            <div class="register-link">
+                <p>Không có tài khoản?
+                <a href="/register">Đăng ký</a>
+                </p>
+
+            </div>
+        </form>
+    </div>
+
+
+
+</body>
+
+
+
+
+{%endblock%}
+
+
+============================================================
+FILE: templates\register.html
+============================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang chủ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+          integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
+    <link rel="stylesheet" href="../../static/login.css">
+
+</head>
+
+{%block content%}
+
+{%if err_msg%}
+<div class="alert alert-danger">{{err_msg}}</div>
+
+{%endif%}
+<body>
+<div class="wrapper">
+
+    <form method="POST" action="/register" enctype="multipart/form-data">
+        <h1>Đăng ký</h1>
+        <div class="input-box">
+            <input type="text" id="name" name="name" placeholder="Họ và tên" required>
+        </div>
+        <div class="input-box">
+            <input type="text" id="username" name="username" placeholder="Tên đăng nhập" required>
+        </div>
+        <div class="input-box">
+            <input type="password" id="password" name="password" placeholder="Mật khẩu" pattern=".{3,}" required>
+        </div>
+        <div class="input-box">
+            <input type="password" id="confirm" name="confirm" placeholder="Nhập lại mật khẩu">
+        </div>
+        <div class="input-box">
+            <input type="file" id="avatar" name="avatar" placeholder="Ảnh đại diện">
+        </div>
+
+        <button type="submit" class="btn">Đăng ký</button>
+    </form>
+</div>
+
+
+</body>
+
+
+{%endblock%}
+
+
+============================================================
+FILE: templates\layout\base.html
+============================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trang chủ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+          integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="../../static/style.css">
+</head>
+<body>
+
+
+
+{%block header%}
+{%include 'layout/header.html'%}
+{%endblock%}
+
+{%block content required%}
+{%endblock%}
+
+{%block footer%}
+{%include 'layout/footer.html'%}
+{%endblock%}
+</body>
+</html>
+
+============================================================
+FILE: templates\layout\footer.html
+============================================================
+<!--<footer>-->
+<!--    <div class="mt-4 p-5 bg-dark text-white rounded">-->
+<!--          <i class="fa-solid fa-dumpster-fire text-danger"></i>-->
+<!--        <h1>E-Commerce Website</h1>-->
+<!--        <p>&copy; 2025 E-Commerce Website All rights reserved</p>-->
+<!--    </div>-->
+<!--</footer>-->
+
+============================================================
+FILE: templates\layout\header.html
+============================================================
+<nav class="navbar navbar-expand-sm navbar-dark bg-white">
+    <div class="container-fluid" style="padding: 0.7rem">
+        <i class="fa-solid fa-teeth"></i>
+        <a class="navbar-brand active" href="/" style="color: black;"> Teeth Tooth</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mynavbar">
+            <ul class="navbar-nav me-auto">
+                {%for c in cates%}
+                <li class="nav-item me-5">
+                    <a class="nav-link" href="/cate_id/{{c.id}}" style="color: black;">
+                        <span class="material-symbols-rounded me-1">{{c.icon}}</span>
+                        {{c.name}}</a>
+                </li>
+                {%endfor%}
+            </ul>
+            <a href="/" class="text-dark me-2"><span class="material-symbols-rounded me-1">settings</span> </a>
+            <a href="/" class="text-dark me-2"> <span class="material-symbols-rounded me-1">notifications</span></i></a>
+            <a href="/" class="text-dark me-2"> <span class="material-symbols-rounded me-1">stacked_email</span></i></a>
+            {%if current_user.is_authenticated %}
+            <a class="nav-link mb-2" href="#" style="color: black;">
+                <img src="{{current_user.avatar}}" width="20">
+                Chào {{current_user.name}}</a>
+            <button class="mb-2 logout"><a href="/logout">Đăng xuất</a></button>
+
+            {%else%}
+            <button class="me-2 login"><a href="/login">Đăng nhập</a>
+                            <button class="me-2 login"><a href="/register">Đăng ký</a>
+                {%endif%}
+            </button>
+        </div>
+    </div>
+</nav>
+
+<aside class="sidebar">
+    <header class="sidebar-header">
+        <nav class="sidebar-nav">
+            <ul class="nav-list primary-nav">
+                <li class="nav-item">
+                    <a href="/" class="nav-link">
+                        <span class="material-symbols-rounded">menu</span>
+                        <span class="nav-label">Trang chủ</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">notifications</span>
+                        <span class="nav-label">Thông báo</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/patient_management" class="nav-link">
+                        <span class="material-symbols-rounded">dashboard</span>
+                        <span class="nav-label">Quản lý bệnh nhân</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/doctor_management" class="nav-link">
+                        <span class="material-symbols-rounded">dashboard</span>
+                        <span class="nav-label">Quản lý bác sĩ</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">analytics</span>
+                        <span class="nav-label">Thống kê</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">star</span>
+                        <span class="nav-label">Đánh dấu</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        <span class="material-symbols-rounded">settings</span>
+                        <span class="nav-label">Cài đặt</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+</aside>
+
+============================================================
+FILE: templates\pages\doctor_management.html
+============================================================
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- TIÊU ĐỀ -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-primary">
+            <i class="bi bi-person-badge"></i> Quản lý bác sĩ
+        </h4>
+        <span class="badge bg-info fs-6">Tổng số: {{ doctors|length }}</span>
+    </div>
+
+    <!-- FORM THÊM BÁC SĨ -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-success text-white fw-bold">
+            <i class="bi bi-plus-circle"></i> Thêm bác sĩ mới
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <input type="text" name="name" class="form-control form-control-sm" placeholder="Tên bác sĩ" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="specialty" class="form-control form-control-sm" placeholder="Chuyên khoa">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="phone_number" class="form-control form-control-sm" placeholder="Số điện thoại">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button class="btn btn-success btn-sm px-3">
+                        <i class="bi bi-check-circle"></i> Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ô TÌM KIẾM -->
+    <form method="get" class="mb-3">
+        <div class="input-group input-group-sm shadow-sm" style="max-width: 500px;">
+            <span class="input-group-text bg-primary text-white"><i class="bi bi-search"></i></span>
+            <input type="text" name="q" class="form-control" placeholder="Tìm theo tên bác sĩ..." value="{{ request.args.get('q','') }}">
+            <button class="btn btn-outline-primary">Tìm kiếm</button>
+        </div>
+    </form>
+
+    <!-- DANH SÁCH BÁC SĨ -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white fw-bold">
+            <i class="bi bi-list-check"></i> Danh sách bác sĩ
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-width: 900px; margin: auto;">
+                <table class="table table-sm table-hover table-striped align-middle mb-0">
+                    <thead class="table-light">
+                        <tr class="text-center">
+                            <th style="width:5%">STT</th>
+                            <th style="width:20%">Tên bác sĩ</th>
+                            <th style="width:20%">Chuyên khoa</th>
+                            <th style="width:15%">SĐT</th>
+                            <th style="width:20%">Email</th>
+                            <th style="width:10%">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in doctors %}
+                        <tr>
+                            <td class="text-center">{{ loop.index }}</td>
+                            <td><i class="bi bi-person-circle text-primary"></i> {{ d.name }}</td>
+                            <td><span class="badge bg-info">{{ d.specialty or 'Chưa có' }}</span></td>
+                            <td>{{ d.phone_number or '-' }}</td>
+                            <td>{{ d.email or '-' }}</td>
+                            <td class="text-center">
+                                <form method="post" action="{{ url_for('delete_detail', id=d.id, name='Doctor') }}" style="display:inline;">
+                                    <input type="hidden" name="action" value="delete_details">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Xóa bác sĩ này?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">
+                                <i class="bi bi-info-circle"></i> Không có bác sĩ nào
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+============================================================
+FILE: templates\pages\edit_invoice.html
+============================================================
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h4 class="fw-bold text-primary mb-3">
+        <i class="bi bi-pencil-square"></i> Sửa hóa đơn
+    </h4>
+
+    <form method="post" class="card shadow-sm p-4">
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Bệnh nhân</label>
+            <input type="text" class="form-control" value="{{ invoice.patient.name }}" disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Bác sĩ phụ trách</label>
+            <select name="doctor_id" class="form-select" required>
+                {% for d in doctors %}
+                    <option value="{{ d.id }}" {% if invoice.doctor.id == d.id %}selected{% endif %}>
+                        {{ d.name }}{% if d.specialty %} - {{ d.specialty }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Ngày khám</label>
+            <input type="date" name="created_date" class="form-control" value="{{ invoice.created_date }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Tổng tiền dịch vụ</label>
+            <input type="text" class="form-control" value="{{ invoice.total_service }}" disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Tổng tiền thuốc</label>
+            <input type="text" class="form-control" value="{{ invoice.total_medicine }}" disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">VAT</label>
+            <input type="text" class="form-control" value="{{ invoice.vat }}" disabled>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Tổng cộng</label>
+            <input type="text" class="form-control fw-bold text-danger" value="{{ invoice.total_payment }}" disabled>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-save"></i> Lưu thay đổi
+            </button>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+
+============================================================
+FILE: templates\pages\invoice_list.html
+============================================================
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <div class="col-md-8 mx-auto"> <!-- Giới hạn chiều ngang -->
+        <h4 class="fw-bold text-primary mb-3 text-center">
+            <i class="bi bi-journal-text"></i> Danh sách hóa đơn
+        </h4>
+
+        <!-- Ô tìm kiếm -->
+        <form method="get" class="mb-3">
+            <div class="input-group input-group-sm">
+                <input type="text" name="keyword" class="form-control"
+                       placeholder="Tìm theo tên bệnh nhân hoặc bác sĩ"
+                       value="{{ request.args.get('keyword','') }}">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Tìm
+                </button>
+            </div>
+        </form>
+
+        <!-- Bảng danh sách hóa đơn -->
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-sm table-bordered table-hover mb-0">
+                    <thead class="table-light text-center">
+                        <tr>
+                            <th style="width: 15%">Ngày</th>
+                            <th style="width: 25%">Bệnh nhân</th>
+                            <th style="width: 25%">Bác sĩ</th>
+                            <th style="width: 20%">Tổng tiền (VNĐ)</th>
+                            <th style="width: 15%">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inv in invoices %}
+                        <tr>
+                            <td class="text-center">{{ inv.created_date.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ inv.patient.name }}</td>
+                            <td>{{ inv.doctor.name }}</td>
+                            <td class="text-end text-danger fw-bold">
+                                {{ "{:,.0f}".format(inv.total_payment) }}
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('edit_invoice', invoice_id=inv.id) }}"
+                                   class="btn btn-outline-warning btn-sm me-1">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form method="post" action="{{ url_for('delete_invoice', invoice_id=inv.id) }}"
+                                      style="display:inline;">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('Bạn có chắc muốn xóa hóa đơn này?');">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">
+                                <i class="bi bi-info-circle"></i> Không có hóa đơn nào
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+============================================================
+FILE: templates\pages\patient_management.html
+============================================================
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">patient_list</span> Quản lý bệnh nhân
+    </h3>
+    <hr>
+
+    <form method="post">
+        <div class="row align-items-end mb-4">
+            <div class="col-md-2 mb-3">
+                <label for="patient_name" class="form-label">Tên bệnh nhân</label>
+                <input type="text" class="form-control" id="patient_name" placeholder="Nhập tên bệnh nhân" name="tenbenhnhan">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="birthday" class="form-label">Ngày sinh</label>
+                <input type="date" class="form-control" id="birthday" placeholder="" name="ngaysinh">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="sex" class="form-label">Giới tính</label>
+                <input type="text" class="form-control" id="sex" placeholder="Nhập giới tính" name="gioitinh">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="phone_number" class="form-label">Số điện thoại</label>
+                <input type="text" class="form-control" id="phone_number" placeholder="Nhập số điện thoại" name="sodienthoai">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="identity_card" class="form-label">CMND/CCCD</label>
+                <input type="text" class="form-control" id="identity_card" placeholder="Nhập CMND/CCCD" name="cancuoc">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="text" class="form-control" id="email" placeholder="Nhập vào email" name="email">
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="address" class="form-label">Địa chỉ</label>
+                <input type="text" class="form-control" id="address" placeholder="Nhập địa chỉ" name="diachi">
+            </div>
+
+
+            <div class="col-md-2 mb-3">
+                <!--                name="action" value="add_new"-->
+                <button class="btn btn-primary me-2 treat-action" type="submit">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+            </div>
+    </form>
+    <form>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <input type="text" class="form-control w-50 me-2" placeholder="Nhập vào từ khóa" name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit" value="search">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </form>
+
+
+</div>
+
+
+<div class="card shadow-sm">
+    <div class="card-header border-bottom-0">
+        <p class="h6 mb-0 d-flex align-items-center">
+            <span class="material-symbols-rounded me-2">patient_list</span> Danh sách bệnh nhân
+        </p>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+                <thead>
+                <tr>
+                    <th style="width: 2%;">STT</th>
+                    <th style="width: 10%;">Tên bệnh nhân</th>
+                    <th style="width: 10%;">Ngày sinh</th>
+                    <th style="width: 8%;">Số điện thoại</th>
+                    <th style="width: 10%;">CMND/CCCD</th>
+                    <th style="width: 20%;">Địa chỉ</th>
+                    <th style="width: 3%;">Xóa</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for p in patient%}
+                <tr>
+                    <td>{{p.id}}</td>
+                    <td>{{p.name}}</td>
+                    <td>{{p.birthday}}</td>
+                    <td>{{p.phone_number}}</td>
+                    <td>{{p.identity_card}}</td>
+                    <td>{{p.address}}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_detail', id=p.id,name='Patient') }}"
+                              style="display:inline;">
+
+                            <input type="hidden" name="action" value="delete_details">
+
+                            <button type="submit" class="btn text-danger p-0" title="Xóa thông tin bệnh nhân"
+                                    onclick="return confirm('Bạn có chắc chắn muốn xóa thông tin bệnh nhân {{ p.name }} không?');">
+                                <span class="material-symbols-rounded delete">delete</span>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {%endfor%}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<nav class="d-flex justify-content-end mt-3">
+    <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+        {% for i in range(1, pages+1)%}
+        <li class="page-item"><a class="page-link"
+                                 href="{{ url_for('patient_management', page=i, q=request.args.get('q', '')) }}">{{i}}</a>
+        </li>
+        {%endfor%}
+        <li class="page-item"><a class="page-link" href="#">»</a></li>
+    </ul>
+</nav>
+</div>
+</body>
+{%endblock%}
+
+============================================================
+FILE: templates\pages\tab1.html
+============================================================
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">list_alt</span> Lập phiếu điều trị
+    </h3>
+    <hr>
+
+    <form method="GET">
+        <div class="row mb-3">
+            <div class="col-md-2" style="color:#1E7BD0">
+                <label for="patient_select" class="form-label">Chọn Bệnh nhân</label>
+
+                <select class="form-select" id="patient_select" name="benhnhan">
+                    <option value="" disabled {% if not selected_patient %}selected{% endif %}>-- Chọn bệnh
+                        nhân --
+                    </option>
+                    {% for p in patient %}
+                    <option value="{{ p.name }}"
+                            {% if selected_patient and selected_patient.id== p.id %}selected{% endif %}>
+                        {{ p.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary treat-action w-100" type="submit">
+                    <span class="material-symbols-rounded">visibility</span> Hiển thị
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <hr>
+
+    {% if selected_patient %}
+
+    <div class="alert alert-info">
+        Đang lập phiếu cho bệnh nhân: <strong>{{ selected_patient.name }}</strong> (ID: {{ selected_patient.id }})
+    </div>
+
+    <form method="post">
+        <input type="hidden" name="patient_id_hidden" value="{{ selected_patient.id }}">
+        <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
+
+        <div class="row align-items-end mb-4">
+            <div class="col-md-2 mb-3">
+                <label for="service_name" class="form-label">Tên dịch vụ</label>
+                <input type="text" class="form-control" id="service_name" placeholder="Chọn dịch vụ"
+                       name="dichvu" list="service_suggestions" onchange="autofillPrice()">
+            </div>
+            <datalist id="service_suggestions">
+                {% for s in serv %}
+                <option value="{{ s.name }}">
+                    {% endfor %}
+            </datalist>
+
+            <div class="col-md-2 mb-3">
+                <label for="price" class="form-label">Đơn giá</label>
+                <input type="text" class="form-control" id="price" placeholder="Đơn giá" name="dongia" readonly>
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="note" class="form-label">Ghi chú</label>
+                <input type="text" class="form-control" id="note" placeholder="Nhập vào ghi chú" name="ghichu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label for="prescription_date" class="form-label">Ngày lập phiếu</label>
+                <input type="date" class="form-control" id="prescription_date" value="{{today}}" name="ngaylapphieu">
+            </div>
+            <div class="col-md-2 mb-3">
+                <button class="btn btn-primary me-2 treat-action w-100" type="submit">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <form>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
+
+            <input type="text" class="form-control w-50 me-2" placeholder="Tìm kiếm dịch vụ, ghi chú..." name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </form>
+
+    {% else %}
+    <div class="alert alert-warning text-center">
+        Vui lòng chọn và hiển thị một bệnh nhân để lập phiếu điều trị.
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-header border-bottom-0">
+            <p class="h6 mb-0 d-flex align-items-center">
+                <span class="material-symbols-rounded me-2">list_alt_check</span>
+                Danh sách dịch vụ {% if selected_patient %}của {{ selected_patient.name }}{% endif %}
+            </p>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th style="width: 5%;">STT</th>
+                        <th style="width: 25%;">Dịch vụ</th>
+                        <th style="width: 15%;">Đơn giá</th>
+                        <th style="width: 15%;">Ghi chú</th>
+                        <th style="width: 15%;">Ngày lập</th>
+                        <th style="width: 3%;">Xóa</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for t in treatm %}
+                    <tr>
+                        <td>{{ t.id }}</td>
+                        <td>{{ t.name }}</td>
+                        <td>{{ t.price }}</td>
+                        <td>{{ t.note }}</td>
+                        <td>{{ t.created_date }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('delete_detail', id=t.id, name='TreatmentSheet') }}"
+                                  style="display:inline;">
+                                <input type="hidden" name="action" value="delete_details">
+                                <button type="submit" class="btn text-danger p-0" title="Xóa mục kê đơn này"
+                                        onclick="return confirm('Bạn có chắc chắn muốn xóa mục {{ t.name }} không?');">
+                                    <span class="material-symbols-rounded delete">delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Chưa có phiếu dịch vụ nào.</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav class="d-flex justify-content-end mt-3">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+            {% for i in range(1, pages+1)%}
+            <li class="page-item">
+                <a class="page-link"
+                   href="{{ url_for('create_form', id=2, page=i, q=request.args.get('q', ''), benhnhan=selected_patient.name if selected_patient else '') }}">
+                    {{i}}
+                </a>
+            </li>
+            {%endfor%}
+            <li class="page-item"><a class="page-link" href="#">»</a></li>
+        </ul>
+    </nav>
+
+</div>
+</body>
+
+<script>
+    console.log("Script đang chạy...");
+
+    var serviceData = [
+        {% for s in serv %}
+            {
+                "name": {{ s.name | tojson }},
+                "price": {{ s.price | tojson }}
+            },
+        {% endfor %}
+    ];
+
+    var servicePriceMap = {};
+    serviceData.forEach(function(item) {
+        servicePriceMap[item.name] = item.price;
+    });
+
+    function autofillPrice() {
+        var inputService = document.getElementById('service_name');
+        var inputPrice = document.getElementById('price');
+
+        var selectedName = inputService.value;
+
+        if (servicePriceMap.hasOwnProperty(selectedName)) {
+
+            inputPrice.value = servicePriceMap[selectedName];
+        } else {
+            inputPrice.value = "";
+        }
+    }
+</script>
+{%endblock%}
+
+============================================================
+FILE: templates\pages\tab2.html
+============================================================
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">list_alt</span> Đặt lịch
+    </h3>
+
+    <div class="row align-items-end mb-4">
+        <div class="col-md-3 mb-3">
+            <label for="serviceSelect" class="form-label">Dịch vụ</label>
+            <input type="text" class="form-control" id="serviceSelect" placeholder="Nhập tên dịch vụ">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="noteInput" class="form-label">Ghi chú</label>
+            <input type="text" class="form-control" id="noteInput" placeholder="Nhập vào ghi chú">
+        </div>
+        <div class="col-md-2 mb-3">
+            <label for="dateInput" class="form-label">Ngày lập phiếu</label>
+            <input type="date" class="form-control" id="dateInput" value="2025-11-11">
+        </div>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <button class="btn btn-primary me-2 treat-action">
+                <span class="material-symbols-rounded">add_box</span> Thêm mới
+            </button>
+            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên dịch vụ">
+            <button class="btn btn-outline-primary treat-action">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header border-bottom-0">
+            <p class="h6 mb-0 d-flex align-items-center">
+                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách các dịch vụ
+            </p>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th style="width: 5%;">STT</th>
+                        <th style="width: 30%;">Dịch vụ</th>
+                        <th style="width: 15%;">Đơn giá</th>
+                        <th style="width: 30%;">Ghi chú</th>
+                        <th style="width: 15%;">Ngày lập phiếu</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Trám răng</td>
+                        <td>300.000</td>
+                        <td>Răng sâu nhẹ</td>
+                        <td>25/07/2025</td>
+                        <td>
+                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav class="d-flex justify-content-end mt-3">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">4</a></li>
+            <li class="page-item"><a class="page-link" href="#">5</a></li>
+            <li class="page-item"><a class="page-link" href="#">»</a></li>
+        </ul>
+    </nav>
+</div>
+</body>
+{%endblock%}
+
+============================================================
+FILE: templates\pages\tab3.html
+============================================================
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">list_alt</span> Quản lý thuốc sử dụng
+    </h3>
+    <hr>
+
+    <form method="GET">
+        <div class="row mb-3">
+            <div class="col-md-2" style="color:#1E7BD0">
+                <label for="patient_select" class="form-label">Chọn Bệnh nhân</label>
+
+                <select class="form-select" id="patient_select" name="benhnhan">
+                    <option value="" disabled selected>-- Chọn bệnh nhân --</option>
+                    {% for p in patient %}
+                    <option value="{{ p.name }}"
+                            {% if selected_patient and selected_patient.id== p.id %}selected{% endif %}>
+                        {{ p.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary treat-action w-100" type="submit">
+                    <span class="material-symbols-rounded">visibility</span> Hiển thị
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <hr>
+
+    {% if selected_patient %}
+
+    <div class="alert alert-info">
+        Đang kê đơn cho bệnh nhân: <strong>{{ selected_patient.name }}</strong> (ID: {{ selected_patient.id }})
+    </div>
+
+    <form method="post">
+        <input type="hidden" name="patient_id_hidden" value="{{ selected_patient.id }}">
+        <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
+
+        <div class="row align-items-end mb-4">
+            <div class="col-md-2 mb-3">
+                <label for="medicine_name" class="form-label">Tên thuốc</label>
+                <input type="text" class="form-control" id="medicine_name" placeholder="Chọn thuốc"
+                       name="tenthuoc" list="service_suggestions" onchange="autofillUnitAndPrice()">
+                <input type="hidden" id="unit_price_hidden">
+            </div>
+            <datalist id="service_suggestions">
+                {% for m in meds_cate %}
+                <option value="{{ m.name }}">
+                    {% endfor %}
+            </datalist>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Liều dùng</label>
+                <input type="number" class="form-control" id="dosage" placeholder="Nhập liều dùng" name="lieudung" onchange="calculateTotal()">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Đơn vị</label>
+                <input type="text" class="form-control" id="unit" placeholder="Nhập đơn vị" name="donvi" readonly>
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Số ngày</label>
+                <input type="number" class="form-control" id="days" placeholder="Số ngày" name="songay" onchange="calculateTotal()">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Ngày kê đơn</label>
+                <input type="date" class="form-control" value="{{today}}" name="ngaykedon">
+            </div>
+            <div class="col-md-2 mb-3">
+                <label class="form-label">Chi phí</label>
+                <input type="text" class="form-control" id="total_cost" name="chiphi" readonly placeholder="0">
+            </div>
+            <div class="col-md-2 mb-3">
+                <button class="btn btn-primary me-2 treat-action w-100" type="submit">
+                    <span class="material-symbols-rounded">add_box</span> Thêm mới
+                </button>
+            </div>
+        </div>
+    </form>
+    <form>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
+            <input type="text" class="form-control w-50 me-2" placeholder="Nhập vào từ khóa" name="q">
+            <button class="btn btn-outline-primary treat-action" type="submit" value="search">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </form>
+
+
+    {% else %}
+    <div class="alert alert-warning text-center">
+        Vui lòng chọn và hiển thị một bệnh nhân để xem hoặc thêm đơn thuốc.
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm mt-3">
+        <div class="card-header border-bottom-0">
+            <p class="h6 mb-0 d-flex align-items-center">
+                <span class="material-symbols-rounded me-2">list_alt_check</span>
+                Danh sách thuốc {% if selected_patient %}của {{ selected_patient.name }}{% endif %}
+            </p>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th>STT</th>
+                        <th>Tên thuốc</th>
+                        <th>Liều dùng</th>
+                        <th>Đơn vị</th>
+                        <th>Số ngày</th>
+                        <th>Ngày kê đơn</th>
+                        <th>Chi phí</th>
+                        <th>Xóa</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for m in meds %}
+                    <tr>
+                        <td>{{loop.index}}</td>
+                        <td>{{m.name}}</td>
+                        <td>{{m.dosage}}</td>
+                        <td>{{m.unit}}</td>
+                        <td>{{m.number_of_days}}</td>
+                        <td>{{m.created_date}}</td>
+                        <td>{{m.price}}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('delete_detail', id=m.id, name='Medicine') }}"
+                                  style="display:inline;">
+                                <input type="hidden" name="action" value="delete_details">
+                                <button type="submit" class="btn text-danger p-0"
+                                        onclick="return confirm('Xóa thuốc này?');">
+                                    <span class="material-symbols-rounded">delete</span>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">Chưa có dữ liệu thuốc.</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav class="d-flex justify-content-end mt-3">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+            {% for i in range(1, pages+1)%}
+            <li class="page-item">
+                <a class="page-link"
+                   href="{{ url_for('create_form', id=3, page=i, q=request.args.get('q', ''), benhnhan=selected_patient.name if selected_patient else '') }}">
+                    {{i}}
+                </a>
+            </li>
+            {%endfor%}
+            <li class="page-item"><a class="page-link" href="#">»</a></li>
+        </ul>
+    </nav>
+
+</div>
+</body>
+
+<script>
+    console.log("Script autofill & calculation đang chạy...");
+
+    var medicineData = [
+        {% if meds_cate %}
+            {% for m in meds_cate %}
+                {
+                    "name": {{ m.name | tojson }},
+                    "unit": {{ m.unit | tojson }},
+                    "price": {{ m.price | tojson }}
+                },
+            {% endfor %}
+        {% endif %}
+    ];
+
+    var medicineInfoMap = {};
+    medicineData.forEach(function(item) {
+        medicineInfoMap[item.name] = {
+            unit: item.unit,
+            price: parseFloat(item.price)
+        };
+    });
+
+    function autofillUnitAndPrice() {
+        var inputService = document.getElementById('medicine_name');
+        var inputUnit = document.getElementById('unit');
+        var hiddenPrice = document.getElementById('unit_price_hidden');
+
+        var selectedName = inputService.value;
+
+        if (medicineInfoMap.hasOwnProperty(selectedName)) {
+            inputUnit.value = medicineInfoMap[selectedName].unit;
+            hiddenPrice.value = medicineInfoMap[selectedName].price;
+
+            calculateTotal();
+        } else {
+            inputUnit.value = "";
+            hiddenPrice.value = 0;
+            calculateTotal();
+        }
+    }
+
+    function calculateTotal() {
+        var unitPrice = parseFloat(document.getElementById('unit_price_hidden').value) || 0;
+        var dosage = parseFloat(document.getElementById('dosage').value) || 0;
+        var days = parseFloat(document.getElementById('days').value) || 0;
+        var outputCost = document.getElementById('total_cost');
+
+        var total = unitPrice * dosage * days*1000;
+
+        outputCost.value = total;
+    }
+</script>
+
+{%endblock%}
+
+============================================================
+FILE: templates\pages\tab4.html
+============================================================
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- TIÊU ĐỀ -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-primary">
+            <i class="bi bi-receipt"></i> LẬP HÓA ĐƠN THANH TOÁN
+        </h4>
+        <div>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
+                <i class="bi bi-journal-text"></i> Xem lại hóa đơn
+            </a>
+        </div>
+    </div>
+
+    <!-- CHỌN BỆNH NHÂN -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get">
+                <label class="form-label fw-semibold">Chọn bệnh nhân</label>
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-5">
+                        <select name="patient_id" class="form-select" required>
+                            <option disabled selected>-- Chọn bệnh nhân --</option>
+                            {% for p in patients %}
+                                <option value="{{ p.id }}"
+                                    {% if invoice and invoice.patient.id == p.id %}selected{% endif %}>
+                                    {{ p.name }} - {{ p.phone_number }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Hiển thị
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if invoice %}
+
+    <!-- THÔNG TIN HÓA ĐƠN: CHỌN BÁC SĨ + NGÀY KHÁM + LƯU -->
+    <div class="card shadow-sm mb-4 border-start border-4 border-primary">
+        <div class="card-body">
+            <h6 class="fw-bold text-primary mb-3">Thông tin hóa đơn</h6>
+
+            <form method="post">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Bác sĩ phụ trách</label>
+                        <select name="doctor_id" class="form-select" id="doctorSelect" required>
+                            <option disabled selected>-- Chọn bác sĩ --</option>
+                            {% for d in doctors %}
+                                <option value="{{ d.id }}"
+                                    {% if selected_doctor and selected_doctor.id == d.id %}selected{% endif %}>
+                                    {{ d.name }}{% if d.specialty %} - {{ d.specialty }}{% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Gõ để tìm nhanh tên bác sĩ</small>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Ngày khám</label>
+                        <input type="date" name="created_date" class="form-control"
+                               value="{{ (invoice.created_date|string) if invoice.created_date else (today|string) }}" required>
+                    </div>
+
+                    <!-- Giữ lại patient_id để lưu hóa đơn -->
+                    <input type="hidden" name="patient_id" value="{{ invoice.patient.id }}">
+
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save"></i> Lưu hóa đơn
+                        </button>
+                        <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
+                            <i class="bi bi-journal-text"></i> Xem lại hóa đơn
+                        </a>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Hiển thị thông tin nhanh -->
+            <div class="row mt-3">
+                <div class="col-md-4"><strong>Bệnh nhân:</strong> {{ invoice.patient.name }}</div>
+                <div class="col-md-4"><strong>Bác sĩ:</strong>
+                    {% if selected_doctor %}{{ selected_doctor.name }}
+                    {% else %}<span class="text-muted">Chưa chọn</span>{% endif %}
+                </div>
+                <div class="col-md-4"><strong>Ngày:</strong>
+                    {% if invoice.created_date %}{{ invoice.created_date }}
+                    {% else %}{{ today }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- THÔNG TIN BỆNH NHÂN -->
+    <div class="card shadow-sm mb-4 border-start border-4 border-info">
+        <div class="card-body">
+            <h6 class="fw-bold text-info mb-3">Thông tin bệnh nhân</h6>
+            <div class="row">
+                <div class="col-md-4"><strong>Tên:</strong> {{ invoice.patient.name }}</div>
+                <div class="col-md-4"><strong>SĐT:</strong> {{ invoice.patient.phone_number }}</div>
+                <div class="col-md-4"><strong>Địa chỉ:</strong> {{ invoice.patient.address }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DỊCH VỤ -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold text-success mb-3">
+                <i class="bi bi-clipboard-check"></i> Dịch vụ sử dụng
+            </h6>
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr class="text-center">
+                        <th>STT</th>
+                        <th>Dịch vụ</th>
+                        <th>Đơn giá (VNĐ)</th>
+                        <th>Ghi chú</th>
+                        <th>Ngày</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in invoice.services %}
+                    <tr>
+                        <td class="text-center">{{ loop.index }}</td>
+                        <td>{{ s.name }}</td>
+                        <td class="text-end text-success">
+                            {{ "{:,.0f}".format(s.price|float) }}
+                        </td>
+                        <td>{{ s.note }}</td>
+                        <td class="text-center">{{ s.created_date }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            Không có dịch vụ
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- THUỐC -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold text-warning mb-3">
+                <i class="bi bi-capsule"></i> Thuốc sử dụng
+            </h6>
+           <table class="table table-sm table-bordered table-hover align-middle">
+    <thead class="table-light text-center small">
+        <tr>
+            <th>STT</th>
+            <th>Tên thuốc</th>
+            <th>Liều dùng</th>
+            <th>Số ngày</th>
+            <th>Chi phí (VNĐ)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for m in invoice.medicines %}
+        <tr class="small">
+            <td class="text-center">{{ loop.index }}</td>
+            <td>{{ m.name }}</td>
+            <td>{{ m.dosage }} {{ m.unit }}</td>
+            <td class="text-center">{{ m.number_of_days }}</td>
+            <td class="text-end text-warning">{{ "{:,.0f}".format(m.price|float) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center text-muted small">Không có thuốc</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+        </div>
+    </div>
+
+    <!-- TỔNG TIỀN -->
+    <div class="card shadow-lg border-0">
+        <div class="card-body">
+            <h5 class="fw-bold mb-3">Tổng thanh toán</h5>
+            <div class="row mb-2">
+                <div class="col">Tổng tiền dịch vụ</div>
+                <div class="col text-end">
+                    {{ "{:,.0f}".format(invoice.total_service|float) }} VNĐ
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">Tổng tiền thuốc</div>
+                <div class="col text-end">
+                    {{ "{:,.0f}".format(invoice.total_medicine|float) }} VNĐ
+                </div>
+            </div>
+            <div class="row mb-2">
+                <div class="col">VAT (10%)</div>
+                <div class="col text-end">
+                    {{ "{:,.0f}".format(invoice.vat|float) }} VNĐ
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col fw-bold fs-5 text-danger">
+                    TỔNG CỘNG
+                </div>
+                <div class="col text-end fw-bold fs-5 text-danger">
+                    {{ "{:,.0f}".format(invoice.total_payment|float) }} VNĐ
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Optional: Enable search for doctor select if Select2 is loaded -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.jQuery && jQuery.fn.select2) {
+    $('#doctorSelect').select2({
+      placeholder: '-- Chọn bác sĩ --',
+      width: '100%'
+    });
+  }
+});
+</script>
+{% endblock %}
+
+============================================================
+FILE: templates\pages\tab5.html
+============================================================
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">list_alt</span> Báo cáo doanh thu
+    </h3>
+
+    <div class="row align-items-end mb-4">
+        <div class="col-md-3 mb-3">
+            <label for="drug_name" class="form-label">Tên thuốc</label>
+            <input type="text" class="form-control" id="drug_name" placeholder="Nhập tên thuốc">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="dosage" class="form-label">Liều dùng</label>
+            <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="unit" class="form-label">Đơn vị</label>
+            <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="number_of_days" class="form-label">Số ngày</label>
+            <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
+        </div>
+        <div class="col-md-2 mb-3">
+            <label for="prescription_date" class="form-label">Ngày kê đơn</label>
+            <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
+        </div>
+        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
+            <button class="btn btn-primary me-2 treat-action">
+                <span class="material-symbols-rounded">add_box</span> Thêm mới
+            </button>
+            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc">
+            <button class="btn btn-outline-primary treat-action">
+                <span class="material-symbols-rounded">search</span> Tìm kiếm
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header border-bottom-0">
+            <p class="h6 mb-0 d-flex align-items-center">
+                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách đơn kê thuốc
+            </p>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th style="width: 5%;">STT</th>
+                        <th style="width: 25%;">Tên thuốc</th>
+                        <th style="width: 15%;">Liều dùng</th>
+                        <th style="width: 15%;">Đơn vị</th>
+                        <th style="width: 15%;">Số ngày</th>
+                        <th style="width: 15%;">Ngày kê đơn</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Paracetamol</td>
+                        <td>2</td>
+                        <td>viên/ngày</td>
+                        <td>5</td>
+                        <td>25/07/2025</td>
+                        <td>
+                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav class="d-flex justify-content-end mt-3">
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
+            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+            <li class="page-item"><a class="page-link" href="#">2</a></li>
+            <li class="page-item"><a class="page-link" href="#">3</a></li>
+            <li class="page-item"><a class="page-link" href="#">4</a></li>
+            <li class="page-item"><a class="page-link" href="#">5</a></li>
+            <li class="page-item"><a class="page-link" href="#">»</a></li>
+        </ul>
+    </nav>
+</div>
+</body>
+{%endblock%}

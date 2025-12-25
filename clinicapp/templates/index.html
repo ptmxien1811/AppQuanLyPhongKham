@@ -1,0 +1,96 @@
+{%extends 'layout/base.html'%}
+
+{%block content%}
+<body style="background-color: #f8f9fa">
+
+<div class="treatment-form-wrapper p-0 overflow-hidden">
+    <div class="row g-0 align-items-center bg-white">
+        <div class="col-md-6 p-5">
+            <h1 class="display-4 fw-bold text-primary mb-3" style="color: #102c3c !important;">
+                <span class="material-symbols-rounded me-2" style="font-size: 48px; vertical-align: bottom;">oral_disease</span>
+                Teeth Tooth Clinic
+            </h1>
+            <h3 class="text-secondary mb-4">Nụ cười của bạn là niềm hạnh phúc của chúng tôi</h3>
+            <p class="lead text-muted mb-4">
+                Chào mừng đến với hệ thống quản lý phòng khám nha khoa hiện đại.
+                Chúng tôi cung cấp các dịch vụ chăm sóc răng miệng toàn diện với đội ngũ bác sĩ tận tâm và trang thiết bị tiên tiến nhất.
+            </p>
+            <div class="d-flex gap-3">
+                <a href="/cate_id/1" class="btn btn-primary btn-lg rounded-pill px-4" style="background-color: #102c3c; border: none;">
+                    Đặt lịch ngay
+                </a>
+                <a href="#services" class="btn btn-outline-secondary btn-lg rounded-pill px-4">
+                    Xem dịch vụ
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <img src="https://static.vecteezy.com/system/resources/previews/006/484/963/non_2x/oral-health-checkup-of-dentist-scene-with-woman-patient-in-chair-dental-office-with-patient-and-doctor-cartoon-characters-flat-illustration-isolated-on-white-background-vector.jpg"
+                 alt="Phòng khám nha khoa"
+                 class="img-fluid w-100"
+                 style="object-fit: cover; height: 80%; max-height: 350px;">
+        </div>
+    </div>
+
+    <div id="services" class="p-5" style="background-color: #f0f4f8;">
+        <div class="row g-4">
+            <!-- Card 1 -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <span class="material-symbols-rounded text-primary mb-3" style="font-size: 48px;">dentistry</span>
+                        <h5 class="card-title fw-bold">Khám & Điều trị Tổng quát</h5>
+                        <p class="card-text text-muted">Kiểm tra sức khỏe răng miệng định kỳ, cạo vôi răng, trám răng thẩm mỹ và điều trị tủy.</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <span class="material-symbols-rounded text-success mb-3" style="font-size: 48px;">child_care</span>
+                        <h5 class="card-title fw-bold">Nha khoa Trẻ em</h5>
+                        <p class="card-text text-muted">Chăm sóc răng miệng cho bé, nhổ răng sữa nhẹ nhàng, bôi vecni flour ngừa sâu răng.</p>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm hover-card">
+                    <div class="card-body text-center p-4">
+                        <span class="material-symbols-rounded text-warning mb-3" style="font-size: 48px;">diamond</span>
+                        <h5 class="card-title fw-bold">Nha khoa Thẩm mỹ</h5>
+                        <p class="card-text text-muted">Tẩy trắng răng công nghệ cao, bọc răng sứ, dán sứ Veneer mang lại nụ cười rạng rỡ.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row bg-white py-5 text-center g-0">
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">15+</h3>
+            <p class="text-muted">Năm kinh nghiệm</p>
+        </div>
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">5000+</h3>
+            <p class="text-muted">Bệnh nhân hài lòng</p>
+        </div>
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">100%</h3>
+            <p class="text-muted">Thiết bị hiện đại</p>
+        </div>
+        <div class="col-md-3">
+            <h3 class="fw-bold text-primary">24/7</h3>
+            <p class="text-muted">Hỗ trợ tư vấn</p>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+{%endblock%}
