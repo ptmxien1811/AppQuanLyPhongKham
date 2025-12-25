@@ -151,7 +151,7 @@ def create_form(id):
             )
 
             flash("✅ Đặt lịch thành công!", "success")
-            return redirect(url_for('schedule_page'))
+            return redirect(url_for('create_form', id=1))
 
         return render_template(
             'pages/tab2.html',
