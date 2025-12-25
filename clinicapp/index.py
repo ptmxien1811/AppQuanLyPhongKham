@@ -119,7 +119,7 @@ def create_form(id):
                                serv=serv, patient=all_patients, selected_patient=selected_patient,today=today_formatted)
 
     elif (id == 1):
-        return render_template("pages/tab2.html")
+        return redirect(url_for('schedule_page'))
 
     elif (id == 3):
         if request.method == 'POST' and 'tenthuoc' in request.form:
@@ -311,6 +311,18 @@ def invoice_page():
         today=date.today()
     )
 
+# ----------------- Xem hóa đơn -----------------
+@app.route('/invoice/view/<int:invoice_id>')
+def view_invoice(invoice_id):
+    invoice = dao.get_invoice_by_id(invoice_id)
+    if not invoice:
+        flash("Không tìm thấy hóa đơn!", "warning")
+        return redirect(url_for('invoice_page'))
+
+    return render_template("pages/view_invoice.html", invoice=invoice)
+
+
+
 @app.route('/invoices')
 def invoice_list():
     keyword = request.args.get('keyword')
@@ -426,6 +438,58 @@ def revenue_report():
         doctor_id=doctor_id
     )
 
+from flask import render_template, request, redirect, url_for, flash
+from clinicapp import app, db
+from models import Doctor, Patient, Appointment
+from datetime import datetime
+# Nếu dao.py chứa schedule_appointment
+from clinicapp.dao import schedule_appointment
+
+
+# ===== index.py =====
+from flask import render_template, request, redirect, url_for, flash
+from clinicapp import app
+from models import Doctor, Appointment
+from clinicapp.dao import schedule_appointment
+
+@app.route('/schedule', methods=['GET', 'POST'])
+def schedule_page():
+    # ❌ KHÔNG filter active
+    doctors = Doctor.query.all()
+    appointments = Appointment.query.order_by(
+        Appointment.appointment_date.desc(),
+        Appointment.appointment_time.desc()
+    ).all()
+
+    if request.method == 'POST':
+        patient_data = {
+            'name': request.form.get('patient_name'),
+            'sex': request.form.get('sex'),
+            'birthday': request.form.get('birthday'),
+            'phone_number': request.form.get('phone_number'),
+        }
+
+        doctor_id = int(request.form.get('doctor_id'))
+        appointment_date = request.form.get('appointment_date')
+        appointment_time = request.form.get('appointment_time')
+        note = request.form.get('note')
+
+        schedule_appointment(
+            patient_data,
+            doctor_id,
+            appointment_date,
+            appointment_time,
+            note
+        )
+
+        flash("✅ Đặt lịch thành công!", "success")
+        return redirect(url_for('schedule_page'))
+
+    return render_template(
+        'pages/tab2.html',
+        doctors=doctors,
+        appointments=appointments
+    )
 
 if __name__ == '__main__':
     with app.app_context():

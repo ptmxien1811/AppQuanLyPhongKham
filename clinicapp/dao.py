@@ -232,7 +232,6 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
     if not created_date:
         created_date = datetime.now()
     elif isinstance(created_date, str):
-        # Chuyển chuỗi thành datetime
         created_date = datetime.strptime(created_date, "%Y-%m-%d")
 
     invoice_name = f"Hóa đơn ngày {created_date.strftime('%d/%m/%Y')}"
@@ -250,11 +249,38 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
     try:
         db.session.add(inv)
         db.session.commit()
+
+        # --- Gán invoice_id cho các dịch vụ và thuốc chưa thanh toán ---
+        treatments = TreatmentSheet.query.filter_by(patient_id=patient_id, invoice_id=None).all()
+        for t in treatments:
+            t.invoice_id = inv.id
+
+        medicines = Medicine.query.filter_by(patient_id=patient_id, invoice_id=None).all()
+        for m in medicines:
+            m.invoice_id = inv.id
+
+        db.session.commit()
+        # --- xong ---
         return inv
     except Exception as e:
         db.session.rollback()
         print("Lỗi lưu hóa đơn:", e)
         return None
+
+def get_invoice_by_id(invoice_id):
+    """Lấy hóa đơn theo ID kèm dịch vụ và thuốc đã lưu"""
+    invoice = Invoice.query.get(invoice_id)
+    if not invoice:
+        return None
+
+    # Load dịch vụ đã gắn hóa đơn
+    invoice.services = TreatmentSheet.query.filter_by(invoice_id=invoice_id).all()
+
+    # Load thuốc đã gắn hóa đơn
+    invoice.medicines = Medicine.query.filter_by(invoice_id=invoice_id).all()
+
+    return invoice
+
 
 def load_invoices(keyword=None):
     query = Invoice.query.join(Patient).join(Doctor)
@@ -414,6 +440,40 @@ def revenue_by_doctor(doctor_id, from_date=None, to_date=None):
     query = query.group_by(Doctor.name)
 
     return query.first()
+
+#---yc1--#
+
+# ===== dao.py =====
+from datetime import datetime
+from clinicapp import db
+from models import Patient, Appointment
+
+def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_time, note=''):
+    patient = Patient.query.filter_by(phone_number=patient_data['phone_number']).first()
+
+    if not patient:
+        patient = Patient(
+            name=patient_data['name'],
+            sex=patient_data['sex'],
+            birthday=datetime.strptime(patient_data['birthday'], "%Y-%m-%d"),
+            phone_number=patient_data['phone_number'],
+            email=patient_data.get('email'),
+            address=patient_data.get('address'),
+            identity_card=patient_data.get('identity_card')
+        )
+        db.session.add(patient)
+        db.session.commit()
+
+    appt = Appointment(
+        patient_id=patient.id,
+        doctor_id=doctor_id,
+        appointment_date=datetime.strptime(appointment_date, "%Y-%m-%d"),
+        appointment_time=appointment_time,
+        note=note
+    )
+    db.session.add(appt)
+    db.session.commit()
+    return appt
 
 
 if __name__ == '__main__':

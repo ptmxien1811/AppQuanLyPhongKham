@@ -1,0 +1,120 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<body style="background-color: #D5E1E6">
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-4 d-flex align-items-center">
+             <span class="material-symbols-rounded me-2 " style="font-size:30px">receipt_long</span> XEM HÓA ĐƠN
+        </h4>
+        <div>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
+                <i class="bi bi-journal-text"></i> Danh sách hóa đơn
+            </a>
+        </div>
+    </div>
+<hr>
+
+<div class="card shadow-sm mb-4 border-start ">
+    <div class="card-body">
+        <h6 class="mb-3 " style="color: #1E7BD0">Thông tin hóa đơn</h6>
+        <div class="row g-3">
+            <div class="col-md-4"><strong>Bác sĩ phụ trách:</strong> {{ invoice.doctor.name }}</div>
+            <div class="col-md-4"><strong>Bệnh nhân:</strong> {{ invoice.patient.name }}</div>
+            <div class="col-md-4"><strong>Ngày:</strong> {{ invoice.created_date }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="mb-3" style="color: #1E7BD0">Dịch vụ sử dụng</h6>
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr class="text-center">
+                    <th>STT</th>
+                    <th>Dịch vụ</th>
+                    <th>Đơn giá (VNĐ)</th>
+                    <th>Ghi chú</th>
+                    <th>Ngày</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in invoice.services %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ s.name }}</td>
+                    <td class="text-end text-success">{{ "{:,.0f}".format(s.price|float) }}</td>
+                    <td>{{ s.note }}</td>
+                    <td class="text-center">{{ s.created_date }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Không có dịch vụ</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="mb-3" style="color: #1E7BD0">Thuốc sử dụng</h6>
+        <table class="table table-sm table-bordered table-hover align-middle">
+            <thead class="table-light text-center small">
+                <tr>
+                    <th>STT</th>
+                    <th>Tên thuốc</th>
+                    <th>Liều dùng</th>
+                    <th>Số ngày</th>
+                    <th>Chi phí (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in invoice.medicines %}
+                <tr class="small">
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ m.name }}</td>
+                    <td>{{ m.dosage }} {{ m.unit }}</td>
+                    <td class="text-center">{{ m.number_of_days }}</td>
+                    <td class="text-end text-warning">{{ "{:,.0f}".format(m.price|float) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted small">Không có thuốc</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-lg border-0">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3">Tổng thanh toán</h5>
+        <div class="row mb-2">
+            <div class="col">Tổng tiền dịch vụ</div>
+            <div class="col text-end">{{ "{:,.0f}".format(invoice.total_service|float) }} VNĐ</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col">Tổng tiền thuốc</div>
+            <div class="col text-end">{{ "{:,.0f}".format(invoice.total_medicine|float) }} VNĐ</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col">VAT (10%)</div>
+            <div class="col text-end">{{ "{:,.0f}".format(invoice.vat|float) }} VNĐ</div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col fw-bold fs-5 text-danger">TỔNG CỘNG</div>
+            <div class="col text-end fw-bold fs-5 text-danger">{{ "{:,.0f}".format(invoice.total_payment|float) }} VNĐ</div>
+        </div>
+    </div>
+</div>
+
+</div>
+</body>
+{% endblock %}

@@ -21,7 +21,11 @@ class Base(db.Model):
     def __str__(self):
         return self.name
 
+
+
 class Patient(Base):
+    __tablename__ = 'patient'
+
     birthday=Column(Date)
     sex=Column(String(150),nullable=False)
     phone_number = Column(String(150),nullable=False)
@@ -31,6 +35,8 @@ class Patient(Base):
 
     medicines = relationship('Medicine', backref='patient', lazy=True)
     treatments = relationship('TreatmentSheet', backref='patient', lazy=True)
+    appointments = relationship('Appointment', backref='patient', lazy=True)
+
 
 class User(Base, UserMixin):
     username=Column(String(150),unique=True,nullable=False)
@@ -76,14 +82,12 @@ class Medicine(Base):
 
 class Doctor(Base):
     __tablename__ = 'doctor'
-    specialty = Column(String(150), nullable=True)
-    phone_number = Column(String(50), nullable=True)
-    email = Column(String(100), nullable=True)
 
-    invoices = relationship('Invoice', backref='doctor', lazy=True)
+    specialty = Column(String(150))
+    phone_number = Column(String(50))
+    email = Column(String(100))
 
-    def __str__(self):
-        return self.name
+    appointments = relationship('Appointment', back_populates='doctor')
 
 class Invoice(Base):
     __tablename__ = 'invoice'
@@ -100,10 +104,27 @@ class Invoice(Base):
     total_payment = Column(Integer, default=0)
 
     patient = relationship('Patient', backref='invoices', lazy=True)
+    doctor = relationship('Doctor', backref='invoices', lazy=True)
     services = relationship('TreatmentSheet', backref='invoice', lazy=True)
     medicines = relationship('Medicine', backref='invoice', lazy=True)
+
     def __str__(self):
         return f"Invoice #{self.id} - {self.patient.name}"
+
+#=yc1=#
+class Appointment(db.Model):
+    __tablename__ = 'appointment'
+
+    id = Column(Integer, primary_key=True)
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+    doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
+
+    appointment_date = Column(Date, nullable=False)
+    appointment_time = Column(String(10), nullable=False)   # ✅ FIX
+    note = Column(String(250))
+
+
+    doctor = relationship('Doctor', back_populates='appointments')
 
 if __name__ == '__main__':
     with app.app_context():
