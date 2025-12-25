@@ -1,85 +1,98 @@
 {% extends 'layout/base.html' %}
+
 {% block content %}
-<div class="container mt-4">
+<body style="background-color: #D5E1E6">
+<div class="treatment-form-wrapper p-4">
 
-    <!-- TIÊU ĐỀ -->
-    <h4 class="fw-bold text-primary mb-4">
-        <i class="bi bi-bar-chart"></i> Báo cáo doanh thu
-    </h4>
+    <h3 class="mb-4 d-flex align-items-center">
+        <span class="material-symbols-rounded me-2">analytics</span> Báo cáo doanh thu
+    </h3>
+    <hr>
 
-    <!-- LỌC THEO NGÀY -->
-    <form method="get" class="row g-2 mb-4">
-        <div class="col-md-3">
-            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
-        </div>
-        <div class="col-md-3">
-            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-primary w-100">
-                <i class="bi bi-funnel"></i> Lọc
-            </button>
-        </div>
-    </form>
+    <div class="row mb-4">
+        <div class="col-md-12">
 
-    <!-- BIỂU ĐỒ -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <canvas id="revenueChart" height="90"></canvas>
+            <form method="get" class="mb-3">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100 treat-action">
+                            <span class="material-symbols-rounded me-2">filter_alt</span> Lọc dữ liệu
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-bold text-primary">Biểu đồ doanh thu theo thời gian</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="100"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
-    <hr>
+    <hr class="my-4">
 
-    <!-- DOANH THU THEO BÁC SĨ -->
-    <h5 class="fw-bold text-success mb-3">
-        <i class="bi bi-person-badge"></i> Doanh thu theo bác sĩ
+    <h5 class="mb-3 d-flex align-items-center text-primary">
+        <span class="material-symbols-rounded me-2">stethoscope</span> Thống kê doanh thu bác sĩ
     </h5>
 
-    <form method="get" class="row g-2 mb-3">
-        <div class="col-md-4">
-            <select name="doctor_id" class="form-select">
-                <option value="">-- Chọn bác sĩ --</option>
-                {% for d in doctors %}
-                <option value="{{ d.id }}"
-                    {% if doctor_id and doctor_id|int == d.id %}selected{% endif %}>
-                    {{ d.name }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+    <form method="get">
+        <input type="hidden" name="from_date" value="{{ from_date }}">
+        <input type="hidden" name="to_date" value="{{ to_date }}">
 
-        <div class="col-md-3">
-            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
-        </div>
-
-        <div class="col-md-3">
-            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
-        </div>
-
-        <div class="col-md-2">
-            <button class="btn btn-success w-100">
-                <i class="bi bi-search"></i> Xem
-            </button>
+        <div class="row align-items-end mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Chọn bác sĩ cần xem</label>
+                <div class="input-group">
+                    <select name="doctor_id" class="form-select">
+                        <option value="">-- Tất cả bác sĩ --</option>
+                        {% for d in doctors %}
+                        <option value="{{ d.id }}"
+                            {% if doctor_id and doctor_id|int == d.id %}selected{% endif %}>
+                            {{ d.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-success treat-action">
+                        <span class="material-symbols-rounded me-2">check</span> Xem kết quả
+                    </button>
+                </div>
+            </div>
         </div>
     </form>
 
     {% if doctor_revenue %}
-    <div class="alert alert-info">
-        <strong>{{ doctor_revenue[0] }}</strong> :
-        {{ "{:,.0f}".format(doctor_revenue[1]) }} VNĐ
+    <div class="alert alert-info d-flex align-items-center shadow-sm" role="alert" style="background-color: #e8f4fd; border-color: #b6effb;">
+        <span class="material-symbols-rounded me-3 fs-1 text-primary">payments</span>
+        <div>
+            <h5 class="alert-heading fw-bold mb-1 text-dark">{{ doctor_revenue[0] }}</h5>
+            <p class="mb-0">
+                Tổng doanh thu trong giai đoạn này:
+                <strong class="fs-4 text-danger ms-2">{{ "{:,.0f}".format(doctor_revenue[1]) }} VNĐ</strong>
+            </p>
+        </div>
     </div>
     {% endif %}
 
 </div>
+</body>
 
-<!-- DATA TRUYỀN SANG JS -->
 <div id="chart-data"
      data-labels='{{ labels | tojson }}'
      data-values='{{ values | tojson }}'>
 </div>
 
-<!-- SCRIPT -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='tab5.js') }}"></script>
 {% endblock %}

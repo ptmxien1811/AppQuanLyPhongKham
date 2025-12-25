@@ -26,10 +26,14 @@ def delete_details(id, name):
         # Tim ban ghi dua tren ID va Ten Model
         if (name == 'Medicine'):
             to_delete = Medicine.query.get(id)
-        if (name == 'TreatmentSheet'):
+        elif (name == 'TreatmentSheet'):
             to_delete = TreatmentSheet.query.get(id)
-        if (name == 'Patient'):
+        elif (name == 'Patient'):
             to_delete = Patient.query.get(id)
+        elif (name == 'Doctor'):
+            to_delete = Doctor.query.get(id)
+        elif (name == 'Appointment'):
+            to_delete = Appointment.query.get(id)
 
         if to_delete:
             db.session.delete(to_delete)
@@ -228,6 +232,18 @@ from datetime import datetime
 
 from datetime import datetime
 
+
+def count_invoices(keyword=None):
+    query = Invoice.query.join(Patient).join(Doctor)
+
+    if keyword:
+        keyword = f"%{keyword}%"
+        query = query.filter(
+            or_(Patient.name.ilike(keyword),
+                Doctor.name.ilike(keyword))
+        )
+    return query.count()
+
 def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
     if not created_date:
         created_date = datetime.now()
@@ -282,19 +298,24 @@ def get_invoice_by_id(invoice_id):
     return invoice
 
 
-def load_invoices(keyword=None):
+def load_invoices(keyword=None, page=None):
     query = Invoice.query.join(Patient).join(Doctor)
 
     if keyword:
         keyword = f"%{keyword}%"
         query = query.filter(
-            or_(
-                Patient.name.ilike(keyword),
-                Doctor.name.ilike(keyword)
-            )
+            or_(Patient.name.ilike(keyword),
+                Doctor.name.ilike(keyword))
         )
 
-    return query.order_by(Invoice.created_date.desc()).all()
+    query = query.order_by(Invoice.created_date.desc(), Invoice.id.desc())
+
+    if page:
+        size = app.config["PAGE_SIZE"]
+        start = (int(page) - 1) * size
+        query = query.slice(start, start + size)
+
+    return query.all()
 
 def load_unpaid_treatments(patient_id):
     return TreatmentSheet.query.filter(

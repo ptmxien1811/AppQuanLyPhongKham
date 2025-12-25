@@ -3,8 +3,8 @@ import os
 # Tên file kết quả sẽ được tạo ra
 OUTPUT_FILE = 'project_full_code.txt'
 
-# Các thư mục cần BỎ QUA (không quét để tránh file rác/thư viện)
-IGNORE_DIRS = {'.git', '.idea', '__pycache__', 'venv', '.venv', 'images', 'node_modules', 'dist', 'build'}
+# Các thư mục cần BỎ QUA (không quét để tránh file rác/thư viện/git)
+IGNORE_DIRS = {'.git', '.idea', '__pycache__', 'venv', '.venv', 'images', 'node_modules', 'dist', 'build', 'migrations'}
 
 # Các đuôi file cần LẤY nội dung (bạn có thể thêm/bớt tùy ý)
 INCLUDE_EXTENSIONS = {'.py', '.html', '.css', '.js', '.json', '.sql', '.txt', '.md', '.xml'}
@@ -36,7 +36,7 @@ def main():
                     file_path = os.path.join(root, file)
 
                     # Bỏ qua chính file script này và file kết quả để tránh lặp vô tận
-                    if file in ['export_code.py', OUTPUT_FILE]:
+                    if file in ['export.py', OUTPUT_FILE]:
                         continue
 
                     # Chỉ lấy các file có đuôi code nằm trong danh sách cho phép

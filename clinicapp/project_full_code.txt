@@ -6,7 +6,7 @@ from flask_admin import Admin
 from flask_admin.theme import Bootstrap4Theme
 from flask_admin.contrib.sqla import ModelView
 
-from models import Category, Medicine, TreatmentSheet, Patient
+from models import Category, Medicine, TreatmentSheet, Patient, Doctor
 from clinicapp import app, db
 
 
@@ -16,6 +16,7 @@ admin = Admin(app=app, name="CLINIC",theme=Bootstrap4Theme())
 admin.add_view(ModelView(Medicine, db.session))
 admin.add_view(ModelView(TreatmentSheet, db.session))
 admin.add_view(ModelView(Patient, db.session))
+admin.add_view(ModelView(Doctor, db.session))
 
 ============================================================
 FILE: dao.py
@@ -246,15 +247,17 @@ from sqlalchemy import or_
 from clinicapp import db
 from models import Invoice, Patient, Doctor
 
-# ================= INVOICE =================
-def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
-    """Thêm hóa đơn mới"""
+from datetime import datetime
 
-    import datetime
+from datetime import datetime
+
+def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total_payment, created_date=None):
     if not created_date:
         created_date = datetime.now()
+    elif isinstance(created_date, str):
+        created_date = datetime.strptime(created_date, "%Y-%m-%d")
 
-    invoice_name = f"Hóa đơn ngày {created_date}"
+    invoice_name = f"Hóa đơn ngày {created_date.strftime('%d/%m/%Y')}"
 
     inv = Invoice(
         name=invoice_name,
@@ -269,25 +272,65 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
     try:
         db.session.add(inv)
         db.session.commit()
+
+        # --- Gán invoice_id cho các dịch vụ và thuốc chưa thanh toán ---
+        treatments = TreatmentSheet.query.filter_by(patient_id=patient_id, invoice_id=None).all()
+        for t in treatments:
+            t.invoice_id = inv.id
+
+        medicines = Medicine.query.filter_by(patient_id=patient_id, invoice_id=None).all()
+        for m in medicines:
+            m.invoice_id = inv.id
+
+        db.session.commit()
+        # --- xong ---
         return inv
     except Exception as e:
-        print(f"Lỗi thêm hóa đơn: {e}")
         db.session.rollback()
+        print("Lỗi lưu hóa đơn:", e)
         return None
+
+def get_invoice_by_id(invoice_id):
+    """Lấy hóa đơn theo ID kèm dịch vụ và thuốc đã lưu"""
+    invoice = Invoice.query.get(invoice_id)
+    if not invoice:
+        return None
+
+    # Load dịch vụ đã gắn hóa đơn
+    invoice.services = TreatmentSheet.query.filter_by(invoice_id=invoice_id).all()
+
+    # Load thuốc đã gắn hóa đơn
+    invoice.medicines = Medicine.query.filter_by(invoice_id=invoice_id).all()
+
+    return invoice
 
 
 def load_invoices(keyword=None):
-    """Lấy danh sách hóa đơn, có thể tìm kiếm theo tên bệnh nhân hoặc bác sĩ"""
     query = Invoice.query.join(Patient).join(Doctor)
 
     if keyword:
         keyword = f"%{keyword}%"
         query = query.filter(
-            or_(Patient.name.ilike(keyword),
-                Doctor.name.ilike(keyword))
+            or_(
+                Patient.name.ilike(keyword),
+                Doctor.name.ilike(keyword)
+            )
         )
 
     return query.order_by(Invoice.created_date.desc()).all()
+
+def load_unpaid_treatments(patient_id):
+    return TreatmentSheet.query.filter(
+        TreatmentSheet.patient_id == patient_id,
+        TreatmentSheet.invoice_id == None
+    ).all()
+
+def load_unpaid_medicines(patient_id):
+    return Medicine.query.filter(
+        Medicine.patient_id == patient_id,
+        Medicine.invoice_id == None
+    ).all()
+
 
 
 def get_invoice_by_id(invoice_id):
@@ -383,87 +426,82 @@ def delete_doctor(id):
             return False
     return False
 
+from sqlalchemy import func
+from models import Invoice, Doctor
+
+# ================= DOANH THU =================
+
+def revenue_by_date(from_date=None, to_date=None):
+    query = db.session.query(
+        Invoice.created_date,
+        func.sum(Invoice.total_payment)
+    )
+
+    if from_date:
+        query = query.filter(Invoice.created_date >= from_date)
+    if to_date:
+        query = query.filter(Invoice.created_date <= to_date)
+
+    query = query.group_by(Invoice.created_date).order_by(Invoice.created_date)
+
+    return query.all()
+
+
+def revenue_by_doctor(doctor_id, from_date=None, to_date=None):
+    query = db.session.query(
+        Doctor.name,
+        func.sum(Invoice.total_payment)
+    ).join(Invoice)
+
+    query = query.filter(Invoice.doctor_id == doctor_id)
+
+    if from_date:
+        query = query.filter(Invoice.created_date >= from_date)
+    if to_date:
+        query = query.filter(Invoice.created_date <= to_date)
+
+    query = query.group_by(Doctor.name)
+
+    return query.first()
+
+#---yc1--#
+
+# ===== dao.py =====
+from datetime import datetime
+from clinicapp import db
+from models import Patient, Appointment
+
+def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_time, note=''):
+    patient = Patient.query.filter_by(phone_number=patient_data['phone_number']).first()
+
+    if not patient:
+        patient = Patient(
+            name=patient_data['name'],
+            sex=patient_data['sex'],
+            birthday=datetime.strptime(patient_data['birthday'], "%Y-%m-%d"),
+            phone_number=patient_data['phone_number'],
+            email=patient_data.get('email'),
+            address=patient_data.get('address'),
+            identity_card=patient_data.get('identity_card')
+        )
+        db.session.add(patient)
+        db.session.commit()
+
+    appt = Appointment(
+        patient_id=patient.id,
+        doctor_id=doctor_id,
+        appointment_date=datetime.strptime(appointment_date, "%Y-%m-%d"),
+        appointment_time=appointment_time,
+        note=note
+    )
+    db.session.add(appt)
+    db.session.commit()
+    return appt
+
 
 if __name__ == '__main__':
     with app.app_context():
         print(auth_user("user", "123"))
-
-============================================================
-FILE: export.py
-============================================================
-import os
-
-# Tên file kết quả sẽ được tạo ra
-OUTPUT_FILE = 'project_full_code.txt'
-
-# Các thư mục cần BỎ QUA (không quét để tránh file rác/thư viện)
-IGNORE_DIRS = {'.git', '.idea', '__pycache__', 'venv', '.venv', 'images', 'node_modules', 'dist', 'build'}
-
-# Các đuôi file cần LẤY nội dung (bạn có thể thêm/bớt tùy ý)
-INCLUDE_EXTENSIONS = {'.py', '.html', '.css', '.js', '.json', '.sql', '.txt', '.md', '.xml'}
-
-
-def is_ignored(path):
-    """Kiểm tra xem đường dẫn có nằm trong danh sách bỏ qua không"""
-    parts = path.split(os.sep)
-    for part in parts:
-        if part in IGNORE_DIRS:
-            return True
-    return False
-
-
-def main():
-    project_root = os.getcwd()  # Lấy thư mục hiện tại đang chạy script
-
-    try:
-        with open(OUTPUT_FILE, 'w', encoding='utf-8') as outfile:
-            print(f"Đang quét thư mục: {project_root} ...\n")
-
-            # Duyệt qua tất cả thư mục và file
-            for root, dirs, files in os.walk(project_root):
-
-                # Loại bỏ các thư mục không mong muốn để không đi sâu vào
-                dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
-
-                for file in files:
-                    file_path = os.path.join(root, file)
-
-                    # Bỏ qua chính file script này và file kết quả để tránh lặp vô tận
-                    if file in ['export_code.py', OUTPUT_FILE]:
-                        continue
-
-                    # Chỉ lấy các file có đuôi code nằm trong danh sách cho phép
-                    _, ext = os.path.splitext(file)
-                    if ext.lower() in INCLUDE_EXTENSIONS:
-
-                        # Tính đường dẫn tương đối để dễ đọc (ví dụ: saleapp/index.py)
-                        rel_path = os.path.relpath(file_path, project_root)
-
-                        if not is_ignored(rel_path):
-                            try:
-                                # Đọc nội dung file
-                                with open(file_path, 'r', encoding='utf-8') as f:
-                                    content = f.read()
-
-                                # Ghi vào file tổng hợp với định dạng rõ ràng
-                                outfile.write(f"\n{'=' * 60}\n")
-                                outfile.write(f"FILE: {rel_path}\n")
-                                outfile.write(f"{'=' * 60}\n")
-                                outfile.write(content + "\n")
-
-                                print(f"✅ Đã thêm: {rel_path}")
-                            except Exception as e:
-                                print(f"❌ Lỗi khi đọc file {rel_path}: {e}")
-
-        print(f"\n🎉 Xong! Toàn bộ code đã được lưu vào file: {OUTPUT_FILE}")
-        print("Bạn có thể mở file này hoặc gửi nó đi.")
-
-    except Exception as e:
-        print(f"Có lỗi xảy ra khi tạo file: {e}")
-
-
-if __name__ == '__main__':
-    main()
 
 ============================================================
 FILE: index.py
@@ -589,7 +627,7 @@ def create_form(id):
                                serv=serv, patient=all_patients, selected_patient=selected_patient,today=today_formatted)
 
     elif (id == 1):
-        return render_template("pages/tab2.html")
+        return redirect(url_for('schedule_page'))
 
     elif (id == 3):
         if request.method == 'POST' and 'tenthuoc' in request.form:
@@ -632,33 +670,6 @@ def create_form(id):
                                today=today_formatted, patient=all_patients, selected_patient=selected_patient,meds_cate=meds_cate)
 
 
-
-    elif id == 4:
-        all_patients = dao.load_patient(page=None)
-        doctors = dao.load_doctors()  # thêm dòng này
-
-        p_id = selected_patient.id if selected_patient else None
-        services = dao.load_treatmentsheet(patient_id=p_id) if p_id else []
-        medicines = dao.load_medicines(patient_id=p_id) if p_id else []
-
-        total_service = sum(float(s.price) for s in services)
-        total_medicine = sum(float(m.price) for m in medicines)
-        sub_total = total_service + total_medicine
-        vat = sub_total * 0.1
-        total_payment = sub_total + vat
-
-        return render_template(
-            "pages/tab4.html",
-            patient=all_patients,
-            doctors=doctors,  # truyền vào template
-            selected_patient=selected_patient,
-            services=services,
-            medicines=medicines,
-            total_service=total_service,
-            total_medicine=total_medicine,
-            vat=vat,
-            total_payment=total_payment
-        )
 
     else:
 
@@ -732,51 +743,61 @@ def common_attribute():
 def get_user(user_id):
     return dao.get_user_by_id(user_id)
 
-# Hàm chuyển đổi chuỗi tiền tệ sang float an toàn
+
 def to_float(v):
     if v is None:
         return 0
     v = str(v).strip()
-    # bỏ dấu chấm ngăn cách hàng nghìn
+
     v = v.replace('.', '')
-    # nếu có dấu phẩy thì đổi thành dấu chấm (trường hợp số thập phân)
+
     v = v.replace(',', '.')
     try:
         return float(v)
     except ValueError:
         return 0
 
+from types import SimpleNamespace
+from datetime import date
+from flask import request, render_template, redirect, url_for, flash
+
 @app.route('/cate_id/4', methods=['GET', 'POST'])
 def invoice_page():
-    # Danh sách bệnh nhân và bác sĩ
     patients = dao.load_patient(page=None)
     doctors = dao.load_doctors()
 
-    # Lấy dữ liệu từ form/URL
     patient_id = request.args.get('patient_id')
+    selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
     doctor_id = request.form.get('doctor_id')
     created_date = request.form.get('created_date') or date.today()
 
-    # Lấy thông tin bệnh nhân, dịch vụ, thuốc
-    selected_patient = dao.get_patient_by_id(patient_id) if patient_id else None
-    services = dao.load_treatmentsheet(patient_id=patient_id) if patient_id else []
-    medicines = dao.load_medicines(patient_id=patient_id) if patient_id else []
+    # Tính tổng dịch vụ và thuốc
+    services = dao.load_unpaid_treatments(patient_id) if patient_id else []
+    medicines = dao.load_unpaid_medicines(patient_id) if patient_id else []
 
-    # Tính toán tổng tiền (dùng to_float để tránh lỗi)
     total_service = sum(to_float(s.price) for s in services)
     total_medicine = sum(to_float(m.price) for m in medicines)
-    vat = (total_service + total_medicine) * 0.1
+    vat = int((total_service + total_medicine) * 0.1)
     total_payment = total_service + total_medicine + vat
 
-    # Nếu POST thì lưu hóa đơn
+    # POST: Lưu hóa đơn
     if request.method == 'POST' and patient_id and doctor_id:
-        dao.add_invoice(patient_id, doctor_id,
-                        total_service, total_medicine,
-                        vat, total_payment, created_date)
-        flash("Hóa đơn đã được lưu thành công!", "success")
-        return redirect(url_for('invoice_list'))
+        inv = dao.add_invoice(
+            patient_id=int(patient_id),
+            doctor_id=int(doctor_id),
+            total_service=total_service,
+            total_medicine=total_medicine,
+            vat=vat,
+            total_payment=total_payment,
+            created_date=created_date
+        )
+        if inv:
+            flash("✅ Lưu hóa đơn thành công!", "success")
+            return redirect(url_for('view_invoice', invoice_id=inv.id))
+        else:
+            flash("❌ Lỗi khi lưu hóa đơn!", "danger")
 
-    # Tạo đối tượng invoice để template dễ dùng
+    # GET: hiển thị thông tin tạm tính trước khi lưu
     invoice = None
     if selected_patient:
         invoice = SimpleNamespace(
@@ -787,15 +808,27 @@ def invoice_page():
             total_medicine=total_medicine,
             vat=vat,
             total_payment=total_payment,
-            created_date=created_date
+            created_date=date.today()
         )
 
-    return render_template("pages/tab4.html",
-                           patients=patients,
-                           doctors=doctors,
-                           invoice=invoice,
-                           selected_doctor=dao.get_doctor_by_id(doctor_id) if doctor_id else None,
-                           today=date.today())
+    return render_template(
+        "pages/tab4.html",
+        patients=patients,
+        doctors=doctors,
+        invoice=invoice,
+        today=date.today()
+    )
+
+# ----------------- Xem hóa đơn -----------------
+@app.route('/invoice/view/<int:invoice_id>')
+def view_invoice(invoice_id):
+    invoice = dao.get_invoice_by_id(invoice_id)
+    if not invoice:
+        flash("Không tìm thấy hóa đơn!", "warning")
+        return redirect(url_for('invoice_page'))
+
+    return render_template("pages/view_invoice.html", invoice=invoice)
+
 
 
 @app.route('/invoices')
@@ -808,7 +841,7 @@ def edit_invoice(invoice_id):
     invoice = dao.get_invoice_by_id(invoice_id)
     doctors = dao.load_doctors()
     if request.method == 'POST':
-        doctor_id = request.form.get('doctor_id')
+        doctor_id = request.form.get('doctor_id') or request.args.get('doctor_id')
         dao.update_invoice(invoice_id, doctor_id=doctor_id)
         flash("Hóa đơn đã được cập nhật!", "info")
         return redirect(url_for('invoice_list'))
@@ -846,7 +879,125 @@ def doctor_management():
 
     doctors = dao.load_doctors(q=q, page=page)
     return render_template('pages/doctor_management.html', pages=pages, page=page, doctors=doctors)
+@app.route('/cate_id/5', methods=['GET'])
+def revenue_report_2():
+    from_date = request.args.get('from_date')
+    to_date = request.args.get('to_date')
+    doctor_id = request.args.get('doctor_id')
 
+    doctors = dao.load_doctors()
+
+    # Doanh thu toàn phòng khám
+    revenue_data = dao.revenue_by_date(from_date, to_date)
+
+    labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
+    values = [r[1] for r in revenue_data]
+
+    # Doanh thu bác sĩ
+    doctor_revenue = None
+    if doctor_id:
+        doctor_revenue = dao.revenue_by_doctor(
+            doctor_id=doctor_id,
+            from_date=from_date,
+            to_date=to_date
+        )
+
+    return render_template(
+        "pages/tab5.html",
+        labels=labels,
+        values=values,
+        doctors=doctors,
+        doctor_revenue=doctor_revenue,
+        from_date=from_date,
+        to_date=to_date,
+        doctor_id=doctor_id
+    )
+
+@app.route('/cate_id/5', methods=['GET'])
+def revenue_report():
+    from_date = request.args.get('from_date')
+    to_date = request.args.get('to_date')
+    doctor_id = request.args.get('doctor_id')
+
+    doctors = dao.load_doctors()
+
+    # Doanh thu toàn phòng khám
+    revenue_data = dao.revenue_by_date(from_date, to_date)
+    labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
+    values = [r[1] for r in revenue_data]
+
+    # Doanh thu theo bác sĩ
+    doctor_revenue = None
+    if doctor_id:
+        doctor_revenue = dao.revenue_by_doctor(
+            doctor_id=doctor_id,
+            from_date=from_date,
+            to_date=to_date
+        )
+
+    return render_template(
+        "pages/tab5.html",
+        labels=labels,
+        values=values,
+        doctors=doctors,
+        doctor_revenue=doctor_revenue,
+        from_date=from_date,
+        to_date=to_date,
+        doctor_id=doctor_id
+    )
+
+from flask import render_template, request, redirect, url_for, flash
+from clinicapp import app, db
+from models import Doctor, Patient, Appointment
+from datetime import datetime
+# Nếu dao.py chứa schedule_appointment
+from clinicapp.dao import schedule_appointment
+
+
+# ===== index.py =====
+from flask import render_template, request, redirect, url_for, flash
+from clinicapp import app
+from models import Doctor, Appointment
+from clinicapp.dao import schedule_appointment
+
+@app.route('/schedule', methods=['GET', 'POST'])
+def schedule_page():
+    # ❌ KHÔNG filter active
+    doctors = Doctor.query.all()
+    appointments = Appointment.query.order_by(
+        Appointment.appointment_date.desc(),
+        Appointment.appointment_time.desc()
+    ).all()
+
+    if request.method == 'POST':
+        patient_data = {
+            'name': request.form.get('patient_name'),
+            'sex': request.form.get('sex'),
+            'birthday': request.form.get('birthday'),
+            'phone_number': request.form.get('phone_number'),
+        }
+
+        doctor_id = int(request.form.get('doctor_id'))
+        appointment_date = request.form.get('appointment_date')
+        appointment_time = request.form.get('appointment_time')
+        note = request.form.get('note')
+
+        schedule_appointment(
+            patient_data,
+            doctor_id,
+            appointment_date,
+            appointment_time,
+            note
+        )
+
+        flash("✅ Đặt lịch thành công!", "success")
+        return redirect(url_for('schedule_page'))
+
+    return render_template(
+        'pages/tab2.html',
+        doctors=doctors,
+        appointments=appointments
+    )
 
 if __name__ == '__main__':
     with app.app_context():
@@ -878,7 +1029,11 @@ class Base(db.Model):
     def __str__(self):
         return self.name
 
+
+
 class Patient(Base):
+    __tablename__ = 'patient'
+
     birthday=Column(Date)
     sex=Column(String(150),nullable=False)
     phone_number = Column(String(150),nullable=False)
@@ -888,6 +1043,8 @@ class Patient(Base):
 
     medicines = relationship('Medicine', backref='patient', lazy=True)
     treatments = relationship('TreatmentSheet', backref='patient', lazy=True)
+    appointments = relationship('Appointment', backref='patient', lazy=True)
+
 
 class User(Base, UserMixin):
     username=Column(String(150),unique=True,nullable=False)
@@ -900,7 +1057,7 @@ class TreatmentSheet(Base):
     note=Column(String(150),nullable=False)
 
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
-
+    invoice_id = Column(Integer, ForeignKey('invoice.id'), nullable=True)
 class Services(Base):
     price = Column(String(150), nullable=False)
 
@@ -922,7 +1079,7 @@ class Medicine(Base):
     unit= Column(String(150),nullable=False)
     number_of_days= Column(Integer, default=0)
     price = Column(String(150), nullable=False)
-
+    invoice_id = Column(Integer, ForeignKey('invoice.id'), nullable=True)
 
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
 
@@ -933,20 +1090,19 @@ class Medicine(Base):
 
 class Doctor(Base):
     __tablename__ = 'doctor'
-    specialty = Column(String(150), nullable=True)
-    phone_number = Column(String(50), nullable=True)
-    email = Column(String(100), nullable=True)
 
-    invoices = relationship('Invoice', backref='doctor', lazy=True)
+    specialty = Column(String(150))
+    phone_number = Column(String(50))
+    email = Column(String(100))
 
-    def __str__(self):
-        return self.name
-
+    appointments = relationship('Appointment', back_populates='doctor')
 
 class Invoice(Base):
     __tablename__ = 'invoice'
-    created_date = Column(Date, default=date.today)
+    id = Column(Integer, primary_key=True)   # nên có id
+    name = Column(String(100))               # thêm cột name
 
+    created_date = Column(Date, default=date.today)
     patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
     doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
 
@@ -956,12 +1112,27 @@ class Invoice(Base):
     total_payment = Column(Integer, default=0)
 
     patient = relationship('Patient', backref='invoices', lazy=True)
+    doctor = relationship('Doctor', backref='invoices', lazy=True)
+    services = relationship('TreatmentSheet', backref='invoice', lazy=True)
+    medicines = relationship('Medicine', backref='invoice', lazy=True)
 
     def __str__(self):
         return f"Invoice #{self.id} - {self.patient.name}"
 
+#=yc1=#
+class Appointment(db.Model):
+    __tablename__ = 'appointment'
+
+    id = Column(Integer, primary_key=True)
+    patient_id = Column(Integer, ForeignKey('patient.id'), nullable=False)
+    doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
+
+    appointment_date = Column(Date, nullable=False)
+    appointment_time = Column(String(10), nullable=False)   # ✅ FIX
+    note = Column(String(250))
 
 
+    doctor = relationship('Doctor', back_populates='appointments')
 
 if __name__ == '__main__':
     with app.app_context():
@@ -1006,6 +1177,17 @@ if __name__ == '__main__':
 
             for s in serv:
                 db.session.add(Services(**s))
+
+
+        with open('data/doctor.json', encoding='utf-8') as f:
+            doctor = json.load(f)
+            for d in doctor:
+                db.session.add(Doctor(**d))
+        with open('data/invoice.json', encoding='utf-8') as f:
+            inv = json.load(f)
+            for i in inv:
+                db.session.add(Invoice(**i))
+
         #
         # add c1,c2,.. vao db
         db.session.add_all([c1, c2, c3, c4, c5])
@@ -1023,6 +1205,7 @@ if __name__ == '__main__':
         # chay lenh, (phai chay moi cap nhat trong database, tuong tu nhu execute)
 
         db.session.commit()
+
 
 
 ============================================================
@@ -1084,6 +1267,338 @@ FILE: data\category.json
     "icon": "chart_data"
   }
 ]
+
+============================================================
+FILE: data\doctor.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Nguyễn Văn A",
+    "specialty": "Nha tổng quát",
+    "phone_number": "0909123456",
+    "email": "nguyenvana@example.com",
+    "active": true,
+    "created_date": "2023-01-15"
+  },
+  {
+    "id": 2,
+    "name": "Trần Thị B",
+    "specialty": "Nha chỉnh hình",
+    "phone_number": "0909234567",
+    "email": "tranthib@example.com",
+    "active": true,
+    "created_date": "2023-02-20"
+  },
+  {
+    "id": 3,
+    "name": "Lê Văn C",
+    "specialty": "Nha nội",
+    "phone_number": "0909345678",
+    "email": "levanc@example.com",
+    "active": true,
+    "created_date": "2023-03-10"
+  }
+]
+
+
+============================================================
+FILE: data\invoice.json
+============================================================
+[
+  {
+    "id": 1,
+    "name": "Hóa đơn số 1",
+    "created_date": "2023-04-01",
+    "patient_id": 1,
+    "doctor_id": 1,
+    "total_service": 500000,
+    "total_medicine": 200000,
+    "vat": 70000,
+    "total_payment": 770000,
+    "active": true
+  },
+  {
+    "id": 2,
+    "name": "Hóa đơn số 2",
+    "created_date": "2023-04-05",
+    "patient_id": 2,
+    "doctor_id": 2,
+    "total_service": 300000,
+    "total_medicine": 150000,
+    "vat": 45000,
+    "total_payment": 495000,
+    "active": true
+  },
+  {
+    "id": 3,
+    "name": "Hóa đơn số 3",
+    "created_date": "2023-04-10",
+    "patient_id": 3,
+    "doctor_id": 3,
+    "total_service": 400000,
+    "total_medicine": 100000,
+    "vat": 50000,
+    "total_payment": 550000,
+    "active": true
+  },
+  {
+    "id": 4,
+    "name": "Hóa đơn số 4",
+    "created_date": "2023-04-15",
+    "patient_id": 4,
+    "doctor_id": 1,
+    "total_service": 250000,
+    "total_medicine": 120000,
+    "vat": 37000,
+    "total_payment": 407000,
+    "active": true
+  },
+  {
+    "id": 5,
+    "name": "Hóa đơn số 5",
+    "created_date": "2023-04-20",
+    "patient_id": 5,
+    "doctor_id": 2,
+    "total_service": 600000,
+    "total_medicine": 300000,
+    "vat": 90000,
+    "total_payment": 990000,
+    "active": true
+  },
+
+  {
+    "id": 6,
+    "name": "Hóa đơn số 6",
+    "created_date": "2025-02-12",
+    "patient_id": 17,
+    "doctor_id": 1,
+    "total_service": 400000,
+    "total_medicine": 150000,
+    "vat": 55000,
+    "total_payment": 605000,
+    "active": true
+  },
+  {
+    "id": 7,
+    "name": "Hóa đơn số 7",
+    "created_date": "2025-03-16",
+    "patient_id": 18,
+    "doctor_id": 2,
+    "total_service": 350000,
+    "total_medicine": 120000,
+    "vat": 47000,
+    "total_payment": 517000,
+    "active": true
+  },
+  {
+    "id": 8,
+    "name": "Hóa đơn số 8",
+    "created_date": "2025-04-21",
+    "patient_id": 19,
+    "doctor_id": 3,
+    "total_service": 500000,
+    "total_medicine": 200000,
+    "vat": 70000,
+    "total_payment": 770000,
+    "active": true
+  },
+  {
+    "id": 9,
+    "name": "Hóa đơn số 9",
+    "created_date": "2025-05-26",
+    "patient_id": 20,
+    "doctor_id": 1,
+    "total_service": 450000,
+    "total_medicine": 180000,
+    "vat": 63000,
+    "total_payment": 693000,
+    "active": true
+  },
+  {
+    "id": 10,
+    "name": "Hóa đơn số 10",
+    "created_date": "2025-06-30",
+    "patient_id": 21,
+    "doctor_id": 2,
+    "total_service": 300000,
+    "total_medicine": 100000,
+    "vat": 40000,
+    "total_payment": 440000,
+    "active": true
+  },
+  {
+    "id": 11,
+    "name": "Hóa đơn số 11",
+    "created_date": "2025-07-06",
+    "patient_id": 22,
+    "doctor_id": 3,
+    "total_service": 600000,
+    "total_medicine": 250000,
+    "vat": 85000,
+    "total_payment": 935000,
+    "active": true
+  },
+  {
+    "id": 12,
+    "name": "Hóa đơn số 12",
+    "created_date": "2025-08-11",
+    "patient_id": 23,
+    "doctor_id": 1,
+    "total_service": 320000,
+    "total_medicine": 140000,
+    "vat": 46000,
+    "total_payment": 506000,
+    "active": true
+  },
+  {
+    "id": 13,
+    "name": "Hóa đơn số 13",
+    "created_date": "2025-09-16",
+    "patient_id": 24,
+    "doctor_id": 2,
+    "total_service": 280000,
+    "total_medicine": 90000,
+    "vat": 37000,
+    "total_payment": 407000,
+    "active": true
+  },
+  {
+    "id": 14,
+    "name": "Hóa đơn số 14",
+    "created_date": "2025-10-21",
+    "patient_id": 25,
+    "doctor_id": 3,
+    "total_service": 700000,
+    "total_medicine": 300000,
+    "vat": 100000,
+    "total_payment": 1100000,
+    "active": true
+  },
+  {
+    "id": 15,
+    "name": "Hóa đơn số 15",
+    "created_date": "2025-11-26",
+    "patient_id": 26,
+    "doctor_id": 1,
+    "total_service": 350000,
+    "total_medicine": 150000,
+    "vat": 50000,
+    "total_payment": 550000,
+    "active": true
+  },
+  {
+    "id": 16,
+    "name": "Hóa đơn số 16",
+    "created_date": "2025-12-02",
+    "patient_id": 27,
+    "doctor_id": 2,
+    "total_service": 400000,
+    "total_medicine": 200000,
+    "vat": 60000,
+    "total_payment": 660000,
+    "active": true
+  },
+  {
+    "id": 17,
+    "name": "Hóa đơn số 17",
+    "created_date": "2025-12-06",
+    "patient_id": 28,
+    "doctor_id": 3,
+    "total_service": 500000,
+    "total_medicine": 250000,
+    "vat": 75000,
+    "total_payment": 825000,
+    "active": true
+  },
+  {
+    "id": 18,
+    "name": "Hóa đơn số 18",
+    "created_date": "2025-12-11",
+    "patient_id": 29,
+    "doctor_id": 1,
+    "total_service": 420000,
+    "total_medicine": 180000,
+    "vat": 60000,
+    "total_payment": 660000,
+    "active": true
+  },
+  {
+    "id": 19,
+    "name": "Hóa đơn số 19",
+    "created_date": "2025-12-16",
+    "patient_id": 30,
+    "doctor_id": 2,
+    "total_service": 380000,
+    "total_medicine": 160000,
+    "vat": 54000,
+    "total_payment": 594000,
+    "active": true
+  },
+  {
+    "id": 20,
+    "name": "Hóa đơn số 20",
+    "created_date": "2025-12-19",
+    "patient_id": 31,
+    "doctor_id": 3,
+    "total_service": 450000,
+    "total_medicine": 200000,
+    "vat": 65000,
+    "total_payment": 715000,
+    "active": true
+  },
+  {
+    "id": 21,
+    "name": "Hóa đơn số 21",
+    "created_date": "2025-12-21",
+    "patient_id": 32,
+    "doctor_id": 1,
+    "total_service": 300000,
+    "total_medicine": 120000,
+    "vat": 42000,
+    "total_payment": 462000,
+    "active": true
+  },
+  {
+    "id": 22,
+    "name": "Hóa đơn số 22",
+    "created_date": "2025-12-23",
+    "patient_id": 33,
+    "doctor_id": 2,
+    "total_service": 600000,
+    "total_medicine": 250000,
+    "vat": 85000,
+    "total_payment": 935000,
+    "active": true
+  },
+  {
+    "id": 23,
+    "name": "Hóa đơn số 23",
+    "created_date": "2025-12-25",
+    "patient_id": 34,
+    "doctor_id": 3,
+    "total_service": 550000,
+    "total_medicine": 220000,
+    "vat": 77000,
+    "total_payment": 847000,
+    "active": true
+  },
+  {
+    "id": 24,
+    "name": "Hóa đơn số 24",
+    "created_date": "2025-12-27",
+    "patient_id": 35,
+    "doctor_id": 1,
+    "total_service": 480000,
+    "total_medicine": 190000,
+    "vat": 67000,
+    "total_payment": 737000,
+    "active": true
+  }
+]
+
+
+
 
 ============================================================
 FILE: data\medicine.json
@@ -1849,7 +2364,199 @@ FILE: data\patient.json
     "identity_card": "079078005544",
     "email": "tuyetlan.mai@shop.vn",
     "address": "30 Quang Trung, Phường 10, Quận Gò Vấp, TP. Hồ Chí Minh"
+  },
+
+  {
+    "id": 17,
+    "name": "Nguyễn Văn Khải",
+    "birthday": "2025-02-11",
+    "sex": "Nam",
+    "phone_number": "0901112233",
+    "identity_card": "079225001122",
+    "email": "khai.nguyen2025@gmail.com",
+    "address": "12 Nguyễn Trãi, Quận 5, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 18,
+    "name": "Trần Thị Hồng",
+    "birthday": "2025-03-15",
+    "sex": "Nữ",
+    "phone_number": "0912223344",
+    "identity_card": "079225003344",
+    "email": "hong.tran2025@yahoo.com",
+    "address": "45 Lý Thường Kiệt, Quận 10, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 19,
+    "name": "Phạm Quốc Dũng",
+    "birthday": "2025-04-20",
+    "sex": "Nam",
+    "phone_number": "0923334455",
+    "identity_card": "079225005566",
+    "email": "quocdung.pham2025@outlook.com",
+    "address": "78 Nguyễn Văn Linh, Quận 7, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 20,
+    "name": "Lê Thị Thu Trang",
+    "birthday": "2025-05-25",
+    "sex": "Nữ",
+    "phone_number": "0934445566",
+    "identity_card": "079225007788",
+    "email": "thutrang.le2025@gmail.com",
+    "address": "23 Võ Văn Tần, Quận 3, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 21,
+    "name": "Đỗ Văn Minh",
+    "birthday": "2025-06-30",
+    "sex": "Nam",
+    "phone_number": "0945556677",
+    "identity_card": "079225009900",
+    "email": "minh.do2025@company.vn",
+    "address": "56 Nguyễn Thị Minh Khai, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 22,
+    "name": "Hoàng Thị Yến",
+    "birthday": "2025-07-05",
+    "sex": "Nữ",
+    "phone_number": "0956667788",
+    "identity_card": "079225011122",
+    "email": "yen.hoang2025@hotmail.com",
+    "address": "89 Cách Mạng Tháng 8, Quận 10, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 23,
+    "name": "Ngô Văn Phúc",
+    "birthday": "2025-08-10",
+    "sex": "Nam",
+    "phone_number": "0967778899",
+    "identity_card": "079225013344",
+    "email": "phuc.ngo2025@gmail.com",
+    "address": "34 Phan Đăng Lưu, Quận Bình Thạnh, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 24,
+    "name": "Bùi Thị Hạnh",
+    "birthday": "2025-09-15",
+    "sex": "Nữ",
+    "phone_number": "0978889900",
+    "identity_card": "079225015566",
+    "email": "hanh.bui2025@yahoo.com",
+    "address": "67 Nguyễn Oanh, Quận Gò Vấp, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 25,
+    "name": "Vũ Văn Tài",
+    "birthday": "2025-10-20",
+    "sex": "Nam",
+    "phone_number": "0989990011",
+    "identity_card": "079225017788",
+    "email": "tai.vu2025@outlook.com",
+    "address": "101 Lê Văn Sỹ, Quận Phú Nhuận, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 26,
+    "name": "Đặng Thị Hoa",
+    "birthday": "2025-11-25",
+    "sex": "Nữ",
+    "phone_number": "0990001122",
+    "identity_card": "079225019900",
+    "email": "hoa.dang2025@gmail.com",
+    "address": "12 Tôn Thất Tùng, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 27,
+    "name": "Nguyễn Văn Lộc",
+    "birthday": "2025-12-01",
+    "sex": "Nam",
+    "phone_number": "0901234567",
+    "identity_card": "079225021122",
+    "email": "loc.nguyen2025@company.vn",
+    "address": "45 Nguyễn Văn Cừ, Quận 5, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 28,
+    "name": "Trần Thị Mỹ Dung",
+    "birthday": "2025-12-05",
+    "sex": "Nữ",
+    "phone_number": "0912345678",
+    "identity_card": "079225023344",
+    "email": "mydung.tran2025@gmail.com",
+    "address": "78 Lê Văn Việt, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 29,
+    "name": "Phạm Văn Hòa",
+    "birthday": "2025-12-10",
+    "sex": "Nam",
+    "phone_number": "0923456789",
+    "identity_card": "079225025566",
+    "email": "hoa.pham2025@outlook.com",
+    "address": "23 Nguyễn Văn Linh, Quận 7, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 30,
+    "name": "Lê Thị Ngọc Mai",
+    "birthday": "2025-12-15",
+    "sex": "Nữ",
+    "phone_number": "0934567890",
+    "identity_card": "079225027788",
+    "email": "ngocmai.le2025@gmail.com",
+    "address": "56 Phan Xích Long, Quận Phú Nhuận, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 31,
+    "name": "Đỗ Văn Quang",
+    "birthday": "2025-12-18",
+    "sex": "Nam",
+    "phone_number": "0945678901",
+    "identity_card": "079225029900",
+    "email": "quang.do2025@yahoo.com",
+    "address": "89 Võ Văn Ngân, TP. Thủ Đức, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 32,
+    "name": "Hoàng Thị Thu",
+    "birthday": "2025-12-20",
+    "sex": "Nữ",
+    "phone_number": "0956789012",
+    "identity_card": "079225031122",
+    "email": "thu.hoang2025@outlook.com",
+    "address": "12 Hai Bà Trưng, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 33,
+    "name": "Ngô Văn Sơn",
+    "birthday": "2025-12-22",
+    "sex": "Nam",
+    "phone_number": "0967890123",
+    "identity_card": "079225033344",
+    "email": "son.ngo2025@gmail.com",
+    "address": "34 Nguyễn Văn Đậu, Quận Bình Thạnh, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 34,
+    "name": "Bùi Thị Thảo",
+    "birthday": "2025-12-24",
+    "sex": "Nữ",
+    "phone_number": "0978901234",
+    "identity_card": "079225035566",
+    "email": "thao.bui2025@hotmail.com",
+    "address": "67 Lê Lợi, Quận 1, TP. Hồ Chí Minh"
+  },
+  {
+    "id": 35,
+    "name": "Vũ Văn Hưng",
+    "birthday": "2025-12-26",
+    "sex": "Nam",
+    "phone_number": "0989012345",
+    "identity_card": "079225037788",
+    "email": "hung.vu2025@company.vn",
+    "address": "101 Nguyễn Oanh, Quận Gò Vấp, TP. Hồ Chí Minh"
   }
+
 ]
 
 ============================================================
@@ -2528,7 +3235,7 @@ FILE: static\style.css
     position: fixed;
     background: #102c3c;
     float: left;
-    height: 140vh;
+    height: 150vh;
     position: static;
 }
 
@@ -2685,6 +3392,43 @@ FILE: static\style.css
         transform: translateY(-5px);
         box-shadow: 0 1rem 3rem rgba(0,0,0,.175)!important;
     }
+
+
+============================================================
+FILE: static\tab5.js
+============================================================
+document.addEventListener("DOMContentLoaded", function () {
+
+    const dataEl = document.getElementById("chart-data");
+    if (!dataEl) return;
+
+    const labels = JSON.parse(dataEl.dataset.labels || "[]");
+    const values = JSON.parse(dataEl.dataset.values || "[]");
+
+    if (labels.length === 0) return;
+
+    const ctx = document.getElementById("revenueChart");
+    if (!ctx) return;
+
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Doanh thu (VNĐ)",
+                data: values,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            plugins: {
+                legend: { display: true }
+            }
+        }
+    });
+});
 
 
 ============================================================
@@ -2932,6 +3676,8 @@ FILE: templates\layout\base.html
           crossorigin="anonymous" referrerpolicy="no-referrer"/>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <link rel="stylesheet" href="../../static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </head>
 <body>
 
@@ -3202,9 +3948,12 @@ FILE: templates\pages\edit_invoice.html
 {% extends 'layout/base.html' %}
 
 {% block content %}
+<body style="background-color: #D5E1E6">
+
+<div class="treatment-form-wrapper p-4">
 <div class="container mt-4">
-    <h4 class="fw-bold text-primary mb-3">
-        <i class="bi bi-pencil-square"></i> Sửa hóa đơn
+    <h4 class="mb-4 d-flex align-items-center">
+          <span class="material-symbols-rounded me-2 " style="font-size:30px">edit</span> Sửa hóa đơn
     </h4>
 
     <form method="post" class="card shadow-sm p-4">
@@ -3259,6 +4008,8 @@ FILE: templates\pages\edit_invoice.html
         </div>
     </form>
 </div>
+</div>
+</body>
 {% endblock %}
 
 
@@ -3268,14 +4019,17 @@ FILE: templates\pages\invoice_list.html
 {% extends 'layout/base.html' %}
 
 {% block content %}
+<body style="background-color: #D5E1E6">
+
+<div class="treatment-form-wrapper p-4">
 <div class="container mt-4">
 
-    <div class="col-md-8 mx-auto"> <!-- Giới hạn chiều ngang -->
-        <h4 class="fw-bold text-primary mb-3 text-center">
-            <i class="bi bi-journal-text"></i> Danh sách hóa đơn
+    <div class="col-md-8 mx-auto">
+        <h4 class="mb-4 d-flex align-items-center text-center">
+             <span class="material-symbols-rounded me-2 " style="font-size:30px">list</span> Danh sách hóa đơn
         </h4>
 
-        <!-- Ô tìm kiếm -->
+
         <form method="get" class="mb-3">
             <div class="input-group input-group-sm">
                 <input type="text" name="keyword" class="form-control"
@@ -3287,7 +4041,6 @@ FILE: templates\pages\invoice_list.html
             </div>
         </form>
 
-        <!-- Bảng danh sách hóa đơn -->
         <div class="card shadow-sm">
             <div class="card-body p-0">
                 <table class="table table-sm table-bordered table-hover mb-0">
@@ -3312,13 +4065,13 @@ FILE: templates\pages\invoice_list.html
                             <td class="text-center">
                                 <a href="{{ url_for('edit_invoice', invoice_id=inv.id) }}"
                                    class="btn btn-outline-warning btn-sm me-1">
-                                    <i class="bi bi-pencil-square"></i>
+                                   <span class="material-symbols-rounded me-2 ">edit</span>
                                 </a>
                                 <form method="post" action="{{ url_for('delete_invoice', invoice_id=inv.id) }}"
-                                      style="display:inline;">
+                                      style="display:inline;>
                                     <button type="submit" class="btn btn-outline-danger btn-sm"
                                             onclick="return confirm('Bạn có chắc muốn xóa hóa đơn này?');">
-                                        <i class="bi bi-trash"></i>
+                                        <span class="material-symbols-rounded me-2 ">delete</span>
                                     </button>
                                 </form>
                             </td>
@@ -3337,6 +4090,8 @@ FILE: templates\pages\invoice_list.html
     </div>
 
 </div>
+</div>
+</body>
 {% endblock %}
 
 
@@ -3522,16 +4277,16 @@ FILE: templates\pages\tab1.html
         <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
 
         <div class="row align-items-end mb-4">
-            <div class="col-md-2 mb-3">
-                <label for="service_name" class="form-label">Tên dịch vụ</label>
-                <input type="text" class="form-control" id="service_name" placeholder="Chọn dịch vụ"
-                       name="dichvu" list="service_suggestions" onchange="autofillPrice()">
-            </div>
-            <datalist id="service_suggestions">
-                {% for s in serv %}
-                <option value="{{ s.name }}">
-                    {% endfor %}
-            </datalist>
+<div class="col-md-2 mb-3">
+    <label for="service_name" class="form-label">Tên dịch vụ</label>
+
+    <select class="form-select" id="service_name" name="dichvu" onchange="autofillPrice()">
+        <option value="" disabled selected>-- Chọn dịch vụ --</option>
+        {% for s in serv %}
+            <option value="{{ s.name }}">{{ s.name }}</option>
+        {% endfor %}
+    </select>
+</div>
 
             <div class="col-md-2 mb-3">
                 <label for="price" class="form-label">Đơn giá</label>
@@ -3674,90 +4429,112 @@ FILE: templates\pages\tab1.html
 ============================================================
 FILE: templates\pages\tab2.html
 ============================================================
-{%extends 'layout/base.html'%}
+{% extends 'layout/base.html' %}
 
-{%block content%}
+{% block content %}
 <body style="background-color: #D5E1E6">
 <div class="treatment-form-wrapper p-4">
-    <h3 class="mb-4 d-flex align-items-center">
-        <span class="material-symbols-rounded me-2">list_alt</span> Đặt lịch
-    </h3>
 
-    <div class="row align-items-end mb-4">
-        <div class="col-md-3 mb-3">
-            <label for="serviceSelect" class="form-label">Dịch vụ</label>
-            <input type="text" class="form-control" id="serviceSelect" placeholder="Nhập tên dịch vụ">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="noteInput" class="form-label">Ghi chú</label>
-            <input type="text" class="form-control" id="noteInput" placeholder="Nhập vào ghi chú">
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="dateInput" class="form-label">Ngày lập phiếu</label>
-            <input type="date" class="form-control" id="dateInput" value="2025-11-11">
-        </div>
-        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <button class="btn btn-primary me-2 treat-action">
-                <span class="material-symbols-rounded">add_box</span> Thêm mới
-            </button>
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên dịch vụ">
-            <button class="btn btn-outline-primary treat-action">
-                <span class="material-symbols-rounded">search</span> Tìm kiếm
-            </button>
-        </div>
-    </div>
+<div class="container mt-3">
+    <h3 class="mb-3 text-center">Đặt lịch khám</h3>
 
-    <div class="card shadow-sm">
-        <div class="card-header border-bottom-0">
-            <p class="h6 mb-0 d-flex align-items-center">
-                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách các dịch vụ
-            </p>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                    <tr>
-                        <th style="width: 5%;">STT</th>
-                        <th style="width: 30%;">Dịch vụ</th>
-                        <th style="width: 15%;">Đơn giá</th>
-                        <th style="width: 30%;">Ghi chú</th>
-                        <th style="width: 15%;">Ngày lập phiếu</th>
-                        <th style="width: 5%;"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Trám răng</td>
-                        <td>300.000</td>
-                        <td>Răng sâu nhẹ</td>
-                        <td>25/07/2025</td>
-                        <td>
-                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
-                            </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+    <!-- Form đặt lịch -->
+    <form method="POST" action="{{ url_for('schedule_page') }}" class="mb-4 w-75 mx-auto">
+        <div class="row g-2">
+            <div class="col-md-5">
+                <input type="text" name="patient_name" class="form-control form-control-sm" placeholder="Họ và tên" required>
+            </div>
+            <div class="col-md-2">
+                <select name="sex" class="form-select form-select-sm" required>
+                    <option value="">Giới tính</option>
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" name="birthday" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="phone_number" class="form-control form-control-sm" placeholder="SĐT" required>
             </div>
         </div>
-    </div>
 
-    <nav class="d-flex justify-content-end mt-3">
-        <ul class="pagination pagination-sm mb-0">
-            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">4</a></li>
-            <li class="page-item"><a class="page-link" href="#">5</a></li>
-            <li class="page-item"><a class="page-link" href="#">»</a></li>
-        </ul>
-    </nav>
+        <div class="row g-2 mt-2">
+            <div class="col-md-5">
+                <select name="doctor_id" class="form-select form-select-sm" required>
+                    <option value="">-- Chọn bác sĩ --</option>
+                    {% for doctor in doctors %}
+                    <option value="{{ doctor.id }}">{{ doctor.name }}{% if doctor.specialty %} ({{ doctor.specialty }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="appointment_date" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-2">
+                <select name="appointment_time" class="form-select form-select-sm" required>
+                    <option value="">Chọn giờ</option>
+                    {% for time in ['08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30'] %}
+                    <option value="{{ time }}">{{ time }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <textarea name="note" class="form-control form-control-sm" placeholder="Ghi chú" rows="1" style="resize:none;"></textarea>
+            </div>
+        </div>
+
+        <div class="mt-2 d-grid col-md-2 mx-auto">
+            <button class="btn btn-primary btn-sm">Đặt lịch</button>
+        </div>
+    </form>
+
+    <div class="w-75 mx-auto">
+        <h5 class="mb-2 text-center">Danh sách lịch đã đặt</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm table-hover small mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="py-1 px-2">STT</th>
+                        <th class="py-1 px-2">Bệnh nhân</th>
+                        <th class="py-1 px-2">Giới tính</th>
+                        <th class="py-1 px-2">Ngày sinh</th>
+                        <th class="py-1 px-2">SĐT</th>
+                        <th class="py-1 px-2">Bác sĩ</th>
+                        <th class="py-1 px-2">Ngày khám</th>
+                        <th class="py-1 px-2">Giờ khám</th>
+                        <th class="py-1 px-2">Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if appointments %}
+                        {% for appt in appointments %}
+                        <tr>
+                            <td class="py-1 px-2">{{ loop.index }}</td>
+                            <td class="py-1 px-2">{{ appt.patient.name }}</td>
+                            <td class="py-1 px-2">{{ appt.patient.sex }}</td>
+                            <td class="py-1 px-2">{{ appt.patient.birthday.strftime('%d/%m/%Y') }}</td>
+                            <td class="py-1 px-2">{{ appt.patient.phone_number }}</td>
+                            <td class="py-1 px-2">{{ appt.doctor.name }}</td>
+                            <td class="py-1 px-2">{{ appt.appointment_date.strftime('%d/%m/%Y') }}</td>
+                            <td class="py-1 px-2">{{ appt.appointment_time }}</td>
+                            <td class="py-1 px-2">{{ appt.note or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-2">Chưa có lịch nào</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 </div>
 </body>
-{%endblock%}
+{% endblock %}
+
 
 ============================================================
 FILE: templates\pages\tab3.html
@@ -3809,17 +4586,18 @@ FILE: templates\pages\tab3.html
         <input type="hidden" name="benhnhan" value="{{ selected_patient.name }}">
 
         <div class="row align-items-end mb-4">
-            <div class="col-md-2 mb-3">
-                <label for="medicine_name" class="form-label">Tên thuốc</label>
-                <input type="text" class="form-control" id="medicine_name" placeholder="Chọn thuốc"
-                       name="tenthuoc" list="service_suggestions" onchange="autofillUnitAndPrice()">
-                <input type="hidden" id="unit_price_hidden">
-            </div>
-            <datalist id="service_suggestions">
-                {% for m in meds_cate %}
-                <option value="{{ m.name }}">
-                    {% endfor %}
-            </datalist>
+<div class="col-md-2 mb-3">
+    <label for="medicine_name" class="form-label">Tên thuốc</label>
+
+    <select class="form-select" id="medicine_name" name="tenthuoc" onchange="autofillUnitAndPrice()">
+        <option value="" disabled selected>-- Chọn thuốc --</option>
+        {% for m in meds_cate %}
+            <option value="{{ m.name }}">{{ m.name }}</option>
+        {% endfor %}
+    </select>
+
+    <input type="hidden" id="unit_price_hidden">
+</div>
             <div class="col-md-2 mb-3">
                 <label class="form-label">Liều dùng</label>
                 <input type="number" class="form-control" id="dosage" placeholder="Nhập liều dùng" name="lieudung" onchange="calculateTotal()">
@@ -3998,12 +4776,15 @@ FILE: templates\pages\tab4.html
 {% extends 'layout/base.html' %}
 
 {% block content %}
+<body style="background-color: #D5E1E6">
+
+<div class="treatment-form-wrapper p-4">
 <div class="container mt-4">
 
-    <!-- TIÊU ĐỀ -->
+
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-primary">
-            <i class="bi bi-receipt"></i> LẬP HÓA ĐƠN THANH TOÁN
+        <h4 class="mb-4 d-flex align-items-center">
+             <span class="material-symbols-rounded me-2 " style="font-size:30px">receipt_long</span> LẬP HÓA ĐƠN THANH TOÁN
         </h4>
         <div>
             <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
@@ -4011,20 +4792,20 @@ FILE: templates\pages\tab4.html
             </a>
         </div>
     </div>
+<hr>
 
-    <!-- CHỌN BỆNH NHÂN -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <form method="get">
-                <label class="form-label fw-semibold">Chọn bệnh nhân</label>
+                <label class="form-label fw-semibold" style="color: #1E7BD0">Chọn bệnh nhân</label>
                 <div class="row g-2 align-items-center">
-                    <div class="col-md-5">
+                    <div class="col-md-3">
                         <select name="patient_id" class="form-select" required>
                             <option disabled selected>-- Chọn bệnh nhân --</option>
                             {% for p in patients %}
                                 <option value="{{ p.id }}"
                                     {% if invoice and invoice.patient.id == p.id %}selected{% endif %}>
-                                    {{ p.name }} - {{ p.phone_number }}
+                                    {{ p.name }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -4041,10 +4822,10 @@ FILE: templates\pages\tab4.html
 
     {% if invoice %}
 
-    <!-- THÔNG TIN HÓA ĐƠN: CHỌN BÁC SĨ + NGÀY KHÁM + LƯU -->
-    <div class="card shadow-sm mb-4 border-start border-4 border-primary">
+
+    <div class="card shadow-sm mb-4 border-start ">
         <div class="card-body">
-            <h6 class="fw-bold text-primary mb-3">Thông tin hóa đơn</h6>
+            <h6 class="mb-3 " style="color: #1E7BD0">Thông tin hóa đơn</h6>
 
             <form method="post">
                 <div class="row g-3">
@@ -4055,11 +4836,10 @@ FILE: templates\pages\tab4.html
                             {% for d in doctors %}
                                 <option value="{{ d.id }}"
                                     {% if selected_doctor and selected_doctor.id == d.id %}selected{% endif %}>
-                                    {{ d.name }}{% if d.specialty %} - {{ d.specialty }}{% endif %}
+                                    {{ d.name }}{% if d.specialty %} {% endif %}
                                 </option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Gõ để tìm nhanh tên bác sĩ</small>
                     </div>
 
                     <div class="col-md-4">
@@ -4068,7 +4848,7 @@ FILE: templates\pages\tab4.html
                                value="{{ (invoice.created_date|string) if invoice.created_date else (today|string) }}" required>
                     </div>
 
-                    <!-- Giữ lại patient_id để lưu hóa đơn -->
+
                     <input type="hidden" name="patient_id" value="{{ invoice.patient.id }}">
 
                     <div class="col-md-4 d-flex align-items-end gap-2">
@@ -4082,13 +4862,19 @@ FILE: templates\pages\tab4.html
                 </div>
             </form>
 
-            <!-- Hiển thị thông tin nhanh -->
+
             <div class="row mt-3">
                 <div class="col-md-4"><strong>Bệnh nhân:</strong> {{ invoice.patient.name }}</div>
-                <div class="col-md-4"><strong>Bác sĩ:</strong>
-                    {% if selected_doctor %}{{ selected_doctor.name }}
-                    {% else %}<span class="text-muted">Chưa chọn</span>{% endif %}
-                </div>
+<div class="col-md-4">
+    <strong>Bác sĩ:</strong>
+    <span id="selected_doctor_display" class="text-primary fw-bold">
+        {% if selected_doctor %}
+             <span class="text-muted fw-normal">{{ selected_doctor.name }}</span>
+        {% else %}
+            <span class="text-muted fw-normal"> Chưa chọn</span>
+        {% endif %}
+    </span>
+</div>
                 <div class="col-md-4"><strong>Ngày:</strong>
                     {% if invoice.created_date %}{{ invoice.created_date }}
                     {% else %}{{ today }}{% endif %}
@@ -4097,10 +4883,9 @@ FILE: templates\pages\tab4.html
         </div>
     </div>
 
-    <!-- THÔNG TIN BỆNH NHÂN -->
-    <div class="card shadow-sm mb-4 border-start border-4 border-info">
+    <div class="card shadow-sm mb-4 border-start ">
         <div class="card-body">
-            <h6 class="fw-bold text-info mb-3">Thông tin bệnh nhân</h6>
+            <h6 class="mb-3" style="color: #1E7BD0">Thông tin bệnh nhân</h6>
             <div class="row">
                 <div class="col-md-4"><strong>Tên:</strong> {{ invoice.patient.name }}</div>
                 <div class="col-md-4"><strong>SĐT:</strong> {{ invoice.patient.phone_number }}</div>
@@ -4109,10 +4894,10 @@ FILE: templates\pages\tab4.html
         </div>
     </div>
 
-    <!-- DỊCH VỤ -->
+
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <h6 class="fw-bold text-success mb-3">
+            <h6 class="mb-3" style="color: #1E7BD0">
                 <i class="bi bi-clipboard-check"></i> Dịch vụ sử dụng
             </h6>
             <table class="table table-bordered table-hover align-middle">
@@ -4148,10 +4933,10 @@ FILE: templates\pages\tab4.html
         </div>
     </div>
 
-    <!-- THUỐC -->
+
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <h6 class="fw-bold text-warning mb-3">
+            <h6 class="mb-3" style="color: #1E7BD0">
                 <i class="bi bi-capsule"></i> Thuốc sử dụng
             </h6>
            <table class="table table-sm table-bordered table-hover align-middle">
@@ -4184,7 +4969,7 @@ FILE: templates\pages\tab4.html
         </div>
     </div>
 
-    <!-- TỔNG TIỀN -->
+
     <div class="card shadow-lg border-0">
         <div class="card-body">
             <h5 class="fw-bold mb-3">Tổng thanh toán</h5>
@@ -4220,114 +5005,246 @@ FILE: templates\pages\tab4.html
 
     {% endif %}
 </div>
+</div>
 
-<!-- Optional: Enable search for doctor select if Select2 is loaded -->
+
+</body>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  if (window.jQuery && jQuery.fn.select2) {
-    $('#doctorSelect').select2({
-      placeholder: '-- Chọn bác sĩ --',
-      width: '100%'
+    document.addEventListener('DOMContentLoaded', function() {
+
+        if (window.jQuery) {
+            $('#doctorSelect').on('change', function() {
+
+                var doctorName = $("#doctorSelect option:selected").text();
+
+
+                var displaySpan = document.getElementById('selected_doctor_display');
+                if (displaySpan) {
+                    displaySpan.innerText = doctorName;
+                    displaySpan.style.color = "#0d6efd";
+                    displaySpan.style.fontWeight = "bold";
+                } else {
+                    console.error("Không tìm thấy thẻ có id='selected_doctor_display'");
+                }
+            });
+        }
     });
-  }
-});
 </script>
+
 {% endblock %}
 
 ============================================================
 FILE: templates\pages\tab5.html
 ============================================================
-{%extends 'layout/base.html'%}
+{% extends 'layout/base.html' %}
+{% block content %}
+<div class="container mt-4">
 
-{%block content%}
+    <!-- TIÊU ĐỀ -->
+    <h4 class="fw-bold text-primary mb-4">
+        <i class="bi bi-bar-chart"></i> Báo cáo doanh thu
+    </h4>
+
+    <!-- LỌC THEO NGÀY -->
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100">
+                <i class="bi bi-funnel"></i> Lọc
+            </button>
+        </div>
+    </form>
+
+    <!-- BIỂU ĐỒ -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <canvas id="revenueChart" height="90"></canvas>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- DOANH THU THEO BÁC SĨ -->
+    <h5 class="fw-bold text-success mb-3">
+        <i class="bi bi-person-badge"></i> Doanh thu theo bác sĩ
+    </h5>
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-4">
+            <select name="doctor_id" class="form-select">
+                <option value="">-- Chọn bác sĩ --</option>
+                {% for d in doctors %}
+                <option value="{{ d.id }}"
+                    {% if doctor_id and doctor_id|int == d.id %}selected{% endif %}>
+                    {{ d.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="from_date" class="form-control" value="{{ from_date }}">
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="to_date" class="form-control" value="{{ to_date }}">
+        </div>
+
+        <div class="col-md-2">
+            <button class="btn btn-success w-100">
+                <i class="bi bi-search"></i> Xem
+            </button>
+        </div>
+    </form>
+
+    {% if doctor_revenue %}
+    <div class="alert alert-info">
+        <strong>{{ doctor_revenue[0] }}</strong> :
+        {{ "{:,.0f}".format(doctor_revenue[1]) }} VNĐ
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- DATA TRUYỀN SANG JS -->
+<div id="chart-data"
+     data-labels='{{ labels | tojson }}'
+     data-values='{{ values | tojson }}'>
+</div>
+
+<!-- SCRIPT -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='tab5.js') }}"></script>
+{% endblock %}
+
+
+============================================================
+FILE: templates\pages\view_invoice.html
+============================================================
+{% extends 'layout/base.html' %}
+
+{% block content %}
 <body style="background-color: #D5E1E6">
 <div class="treatment-form-wrapper p-4">
-    <h3 class="mb-4 d-flex align-items-center">
-        <span class="material-symbols-rounded me-2">list_alt</span> Báo cáo doanh thu
-    </h3>
 
-    <div class="row align-items-end mb-4">
-        <div class="col-md-3 mb-3">
-            <label for="drug_name" class="form-label">Tên thuốc</label>
-            <input type="text" class="form-control" id="drug_name" placeholder="Nhập tên thuốc">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="dosage" class="form-label">Liều dùng</label>
-            <input type="text" class="form-control" id="dosage" placeholder="Nhập vào liều dùng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="unit" class="form-label">Đơn vị</label>
-            <input type="text" class="form-control" id="unit" placeholder="Nhập số lượng">
-        </div>
-        <div class="col-md-3 mb-3">
-            <label for="number_of_days" class="form-label">Số ngày</label>
-            <input type="text" class="form-control" id="number_of_days" placeholder="Nhập số ngày">
-        </div>
-        <div class="col-md-2 mb-3">
-            <label for="prescription_date" class="form-label">Ngày kê đơn</label>
-            <input type="date" class="form-control" id="prescription_date" value="2025-11-11">
-        </div>
-        <div class="col-md-4 mb-0.95 d-flex flex-row justify-content-start action-bar">
-            <button class="btn btn-primary me-2 treat-action">
-                <span class="material-symbols-rounded">add_box</span> Thêm mới
-            </button>
-            <input type="text" class="form-control w-50 me-2" placeholder="Nhập tên thuốc">
-            <button class="btn btn-outline-primary treat-action">
-                <span class="material-symbols-rounded">search</span> Tìm kiếm
-            </button>
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-4 d-flex align-items-center">
+             <span class="material-symbols-rounded me-2 " style="font-size:30px">receipt_long</span> XEM HÓA ĐƠN
+        </h4>
+        <div>
+            <a href="{{ url_for('invoice_list') }}" class="btn btn-outline-info">
+                <i class="bi bi-journal-text"></i> Danh sách hóa đơn
+            </a>
         </div>
     </div>
+<hr>
 
-    <div class="card shadow-sm">
-        <div class="card-header border-bottom-0">
-            <p class="h6 mb-0 d-flex align-items-center">
-                <span class="material-symbols-rounded me-2">list_alt_check</span> Danh sách đơn kê thuốc
-            </p>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover mb-0">
-                    <thead>
-                    <tr>
-                        <th style="width: 5%;">STT</th>
-                        <th style="width: 25%;">Tên thuốc</th>
-                        <th style="width: 15%;">Liều dùng</th>
-                        <th style="width: 15%;">Đơn vị</th>
-                        <th style="width: 15%;">Số ngày</th>
-                        <th style="width: 15%;">Ngày kê đơn</th>
-                        <th style="width: 5%;"></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Paracetamol</td>
-                        <td>2</td>
-                        <td>viên/ngày</td>
-                        <td>5</td>
-                        <td>25/07/2025</td>
-                        <td>
-                            <button class="btn text-danger p-0"><span class="material-symbols-rounded">delete</span>
-                            </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+<div class="card shadow-sm mb-4 border-start ">
+    <div class="card-body">
+        <h6 class="mb-3 " style="color: #1E7BD0">Thông tin hóa đơn</h6>
+        <div class="row g-3">
+            <div class="col-md-4"><strong>Bác sĩ phụ trách:</strong> {{ invoice.doctor.name }}</div>
+            <div class="col-md-4"><strong>Bệnh nhân:</strong> {{ invoice.patient.name }}</div>
+            <div class="col-md-4"><strong>Ngày:</strong> {{ invoice.created_date }}</div>
         </div>
     </div>
+</div>
 
-    <nav class="d-flex justify-content-end mt-3">
-        <ul class="pagination pagination-sm mb-0">
-            <li class="page-item disabled"><a class="page-link" href="#">«</a></li>
-            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-            <li class="page-item"><a class="page-link" href="#">2</a></li>
-            <li class="page-item"><a class="page-link" href="#">3</a></li>
-            <li class="page-item"><a class="page-link" href="#">4</a></li>
-            <li class="page-item"><a class="page-link" href="#">5</a></li>
-            <li class="page-item"><a class="page-link" href="#">»</a></li>
-        </ul>
-    </nav>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="mb-3" style="color: #1E7BD0">Dịch vụ sử dụng</h6>
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr class="text-center">
+                    <th>STT</th>
+                    <th>Dịch vụ</th>
+                    <th>Đơn giá (VNĐ)</th>
+                    <th>Ghi chú</th>
+                    <th>Ngày</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in invoice.services %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ s.name }}</td>
+                    <td class="text-end text-success">{{ "{:,.0f}".format(s.price|float) }}</td>
+                    <td>{{ s.note }}</td>
+                    <td class="text-center">{{ s.created_date }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">Không có dịch vụ</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="mb-3" style="color: #1E7BD0">Thuốc sử dụng</h6>
+        <table class="table table-sm table-bordered table-hover align-middle">
+            <thead class="table-light text-center small">
+                <tr>
+                    <th>STT</th>
+                    <th>Tên thuốc</th>
+                    <th>Liều dùng</th>
+                    <th>Số ngày</th>
+                    <th>Chi phí (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in invoice.medicines %}
+                <tr class="small">
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>{{ m.name }}</td>
+                    <td>{{ m.dosage }} {{ m.unit }}</td>
+                    <td class="text-center">{{ m.number_of_days }}</td>
+                    <td class="text-end text-warning">{{ "{:,.0f}".format(m.price|float) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted small">Không có thuốc</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-lg border-0">
+    <div class="card-body">
+        <h5 class="fw-bold mb-3">Tổng thanh toán</h5>
+        <div class="row mb-2">
+            <div class="col">Tổng tiền dịch vụ</div>
+            <div class="col text-end">{{ "{:,.0f}".format(invoice.total_service|float) }} VNĐ</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col">Tổng tiền thuốc</div>
+            <div class="col text-end">{{ "{:,.0f}".format(invoice.total_medicine|float) }} VNĐ</div>
+        </div>
+        <div class="row mb-2">
+            <div class="col">VAT (10%)</div>
+            <div class="col text-end">{{ "{:,.0f}".format(invoice.vat|float) }} VNĐ</div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col fw-bold fs-5 text-danger">TỔNG CỘNG</div>
+            <div class="col text-end fw-bold fs-5 text-danger">{{ "{:,.0f}".format(invoice.total_payment|float) }} VNĐ</div>
+        </div>
+    </div>
+</div>
+</div>
 </div>
 </body>
-{%endblock%}
+{% endblock %}
+
