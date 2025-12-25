@@ -386,7 +386,7 @@ def view_invoice(invoice_id):
     invoice = dao.get_invoice_by_id(invoice_id)
     if not invoice:
         flash("Không tìm thấy hóa đơn!", "warning")
-        return redirect(url_for('invoice_page'))
+        return redirect(url_for('invoice_pagecate/'))
 
     return render_template("pages/view_invoice.html", invoice=invoice)
 
