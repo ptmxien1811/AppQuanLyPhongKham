@@ -468,22 +468,55 @@ def revenue_by_doctor(doctor_id, from_date=None, to_date=None):
 from datetime import datetime
 from clinicapp import db
 from models import Patient, Appointment
+from flask import flash, redirect, render_template, request, url_for
+
+
+def can_schedule(doctor_id, appointment_date, appointment_time):
+    # Chuyển appointment_date từ string sang date object
+    appt_date = datetime.strptime(appointment_date, "%Y-%m-%d").date()
+    appt_datetime = datetime.strptime(f"{appointment_date} {appointment_time}", "%Y-%m-%d %H:%M")
+
+    # Không cho đặt lịch trong quá khứ
+    if appt_datetime < datetime.now():
+        return False, "Không thể đặt lịch trong quá khứ"
+
+    # Kiểm tra số lượng lịch trong ngày
+    count = Appointment.query.filter_by(doctor_id=doctor_id, appointment_date=appt_date).count()
+    if count >= 5:
+        return False, "Bác sĩ đã đủ 5 lịch trong ngày"
+    # Kiểm tra trùng giờ
+    existing = Appointment.query.filter_by(
+        doctor_id=doctor_id,
+        appointment_date=appt_date,
+        appointment_time=appointment_time
+    ).first()
+    if existing:
+        return False, "Giờ này đã được đặt"
+    return True, "Có thể đặt lịch"
 
 def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_time, note=''):
     patient = Patient.query.filter_by(phone_number=patient_data['phone_number']).first()
+    ok, msg = can_schedule(doctor_id, appointment_date, appointment_time)
+    if not ok:
+        flash(msg, "danger"),
+        return None
 
     if not patient:
         patient = Patient(
-            name=patient_data['name'],
-            sex=patient_data['sex'],
-            birthday=datetime.strptime(patient_data['birthday'], "%Y-%m-%d"),
-            phone_number=patient_data['phone_number'],
-            email=patient_data.get('email'),
-            address=patient_data.get('address'),
-            identity_card=patient_data.get('identity_card')
+           name=patient_data['name'],
+           sex=patient_data['sex'],
+           birthday=datetime.strptime(patient_data['birthday'], "%Y-%m-%d"),
+           phone_number=patient_data['phone_number'],
+           email=patient_data.get('email'),
+           address=patient_data.get('address'),
+           identity_card=patient_data.get('identity_card')
         )
+
+
         db.session.add(patient)
         db.session.commit()
+
+
 
     appt = Appointment(
         patient_id=patient.id,
@@ -492,9 +525,14 @@ def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_
         appointment_time=appointment_time,
         note=note
     )
+
+
     db.session.add(appt)
     db.session.commit()
     return appt
+
+
+
 
 
 if __name__ == '__main__':

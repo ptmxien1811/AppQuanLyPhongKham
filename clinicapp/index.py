@@ -257,40 +257,82 @@ def create_form(id):
             today=date.today()
         )
 
+
     else:
+
         from_date = request.args.get('from_date')
+
         to_date = request.args.get('to_date')
+
         doctor_id = request.args.get('doctor_id')
 
         doctors = dao.load_doctors()
 
-        # Doanh thu toàn phòng khám
-        revenue_data = dao.revenue_by_date(from_date, to_date)
-        labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
-        values = [r[1] for r in revenue_data]
+        revenue_data = []
 
-        # Doanh thu theo bác sĩ
+        labels = []
+
+        values = []
+
         doctor_revenue = None
-        if doctor_id:
-            doctor_revenue = dao.revenue_by_doctor(
-                doctor_id=doctor_id,
-                from_date=from_date,
-                to_date=to_date
-            )
+
+        # ✅ CHƯA CHỌN NGÀY → HIỆN THÔNG BÁO
+
+        if not from_date or not to_date:
+
+            flash("⚠️ Hãy chọn thời gian để xem báo cáo!", "warning")
+
+
+        else:
+
+            # Convert string -> date
+
+            from datetime import datetime
+
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+
+            # Doanh thu toàn phòng khám
+
+            revenue_data = dao.revenue_by_date(from_date_obj, to_date_obj)
+
+            labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
+
+            values = [r[1] for r in revenue_data]
+
+            # Doanh thu theo bác sĩ
+
+            if doctor_id:
+                doctor_revenue = dao.revenue_by_doctor(
+
+                    doctor_id=int(doctor_id),
+
+                    from_date=from_date_obj,
+
+                    to_date=to_date_obj
+
+                )
 
         return render_template(
+
             "pages/tab5.html",
+
             labels=labels,
+
             values=values,
+
             doctors=doctors,
+
             doctor_revenue=doctor_revenue,
+
             from_date=from_date,
+
             to_date=to_date,
+
             doctor_id=doctor_id
+
         )
-
-
-
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -376,7 +418,7 @@ def to_float(v):
 
 from types import SimpleNamespace
 from datetime import date
-from flask import request, render_template, redirect, url_for, flash
+
 
 
 
@@ -452,13 +494,17 @@ def doctor_management():
 
 
 
-
-from flask import render_template, request, redirect, url_for, flash
-from clinicapp import app, db
+from flask import Flask, render_template, request, redirect, url_for, flash
+from clinicapp import dao
 from models import Doctor, Patient, Appointment
-from datetime import datetime
-# Nếu dao.py chứa schedule_appointment
-from clinicapp.dao import schedule_appointment
+
+app = Flask(__name__)
+app.secret_key = "secret_key"   # cần để flash hoạt động
+
+
+
+from clinicapp import app, db
+
 
 
 # ===== index.py =====

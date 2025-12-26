@@ -28,6 +28,12 @@
         {% if messages %}
             {% for category, message in messages %}
                 <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {% if category == 'success' %}
+                    <i class="fa-solid fa-circle-check me-2"></i>
+                    {% elif category == 'danger' %} <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    {% else %}
+                    <i class="fa-solid fa-bell me-2"></i>
+                    {% endif %}
                     <i class="fa-solid fa-bell me-2"></i> <strong>Thông báo:</strong> {{ message }}
 
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
