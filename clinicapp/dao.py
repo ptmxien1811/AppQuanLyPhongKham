@@ -1,9 +1,13 @@
 import hashlib
-import json
-
 from clinicapp import app, db
 from models import Category, Medicine, User, TreatmentSheet, Services, Patient, MedicineCategory
-
+from sqlalchemy import or_
+from sqlalchemy import func
+from models import Invoice, Doctor
+from datetime import datetime
+from clinicapp import db
+from models import Patient, Appointment
+from flask import flash
 
 def load_categories():
     return Category.query.all()
@@ -205,6 +209,7 @@ def load_medicines(q=None, page=None, patient_id=None):
         query = query.slice(start, start + size)
 
     return query.all()
+
 def get_patient_by_name(name):
     if not name:
         return None
@@ -213,7 +218,7 @@ def get_patient_by_name(name):
 def get_patient_by_id(patient_id):
     return Patient.query.get(patient_id)
 
-from models import Doctor, Invoice
+
 
 # ================= DOCTOR =================
 def load_doctors():
@@ -224,13 +229,7 @@ def get_doctor_by_id(doctor_id):
     """Lấy thông tin bác sĩ theo ID"""
     return Doctor.query.get(doctor_id)
 
-from sqlalchemy import or_
-from clinicapp import db
-from models import Invoice, Patient, Doctor
 
-from datetime import datetime
-
-from datetime import datetime
 
 
 def count_invoices(keyword=None):
@@ -377,7 +376,6 @@ def delete_invoice(invoice_id):
         db.session.rollback()
         return False
 
-from models import Doctor
 
 def add_doctor(name, specialty=None, phone_number=None, email=None):
     new_doctor = Doctor(
@@ -424,9 +422,6 @@ def delete_doctor(id):
             return False
     return False
 
-from sqlalchemy import func
-from models import Invoice, Doctor
-
 # ================= DOANH THU =================
 
 def revenue_by_date(from_date=None, to_date=None):
@@ -439,9 +434,7 @@ def revenue_by_date(from_date=None, to_date=None):
         query = query.filter(Invoice.created_date >= from_date)
     if to_date:
         query = query.filter(Invoice.created_date <= to_date)
-
     query = query.group_by(Invoice.created_date).order_by(Invoice.created_date)
-
     return query.all()
 
 
@@ -457,18 +450,9 @@ def revenue_by_doctor(doctor_id, from_date=None, to_date=None):
         query = query.filter(Invoice.created_date >= from_date)
     if to_date:
         query = query.filter(Invoice.created_date <= to_date)
-
     query = query.group_by(Doctor.name)
-
     return query.first()
 
-#---yc1--#
-
-# ===== dao.py =====
-from datetime import datetime
-from clinicapp import db
-from models import Patient, Appointment
-from flask import flash, redirect, render_template, request, url_for
 
 
 def can_schedule(doctor_id, appointment_date, appointment_time):
@@ -494,6 +478,7 @@ def can_schedule(doctor_id, appointment_date, appointment_time):
         return False, "Giờ này đã được đặt"
     return True, "Có thể đặt lịch"
 
+
 def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_time, note=''):
     patient = Patient.query.filter_by(phone_number=patient_data['phone_number']).first()
     ok, msg = can_schedule(doctor_id, appointment_date, appointment_time)
@@ -512,11 +497,8 @@ def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_
            identity_card=patient_data.get('identity_card')
         )
 
-
         db.session.add(patient)
         db.session.commit()
-
-
 
     appt = Appointment(
         patient_id=patient.id,
@@ -525,8 +507,6 @@ def schedule_appointment(patient_data, doctor_id, appointment_date, appointment_
         appointment_time=appointment_time,
         note=note
     )
-
-
     db.session.add(appt)
     db.session.commit()
     return appt

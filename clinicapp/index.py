@@ -4,6 +4,8 @@ import math
 from flask_login import login_user, current_user, logout_user
 from clinicapp.dao import add_medicine_detail, delete_details, add_service_detail, add_patient_info
 import cloudinary.uploader
+from flask import Flask
+from clinicapp import dao
 
 
 from models import UserEnum
@@ -531,20 +533,11 @@ def doctor_management():
 
 
 
-from flask import Flask
-from clinicapp import dao
-
-
 app = Flask(__name__)
-app.secret_key = "secret_key"   # cần để flash hoạt động
-
+app.secret_key = "secret_key"
 
 
 from clinicapp import app, db
-
-
-
-# ===== index.py =====
 from flask import render_template, request, redirect, url_for, flash
 from clinicapp import app
 from models import Doctor, Appointment
