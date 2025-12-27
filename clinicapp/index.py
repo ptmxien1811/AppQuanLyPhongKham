@@ -1,11 +1,10 @@
-from datetime import date
-from flask import render_template, request, redirect, url_for, flash
+
 from clinicapp import dao, app, login, admin, db
 import math
 from flask_login import login_user, current_user, logout_user
 from clinicapp.dao import add_medicine_detail, delete_details, add_service_detail, add_patient_info
 import cloudinary.uploader
-from types import SimpleNamespace
+
 
 from models import UserEnum
 
@@ -118,46 +117,110 @@ def create_form(id):
         return render_template("pages/tab1.html", treatm=treatm, q=q, pages=pages,
                                serv=serv, patient=all_patients, selected_patient=selected_patient,today=today_formatted)
 
+
+
     elif (id == 1):
+
         patients = dao.load_patient(page=None)
+
         doctors = Doctor.query.all()
+
         appointments = Appointment.query.order_by(
+
             Appointment.appointment_date.desc(),
+
             Appointment.appointment_time.desc()
+
         ).all()
 
         if request.method == 'POST':
+
             patient_data = {
+
                 'name': request.form.get('patient_name'),
+
                 'sex': request.form.get('sex'),
+
                 'birthday': request.form.get('birthday'),
+
                 'phone_number': request.form.get('phone_number'),
+
                 'email': request.form.get('email'),
+
                 'address': request.form.get('address'),
+
                 'identity_card': request.form.get('identity_card')
+
             }
 
             doctor_id = int(request.form.get('doctor_id'))
+
             appointment_date = request.form.get('appointment_date')
+
             appointment_time = request.form.get('appointment_time')
+
             note = request.form.get('note')
 
-            schedule_appointment(
-                patient_data,
-                doctor_id,
-                appointment_date,
-                appointment_time,
-                note
-            )
+            # 🔍 Kiểm tra trùng giờ
 
-            flash("✅ Đặt lịch thành công!", "success")
+            existing = Appointment.query.filter_by(
+
+                doctor_id=doctor_id,
+
+                appointment_date=appointment_date,
+
+                appointment_time=appointment_time
+
+            ).first()
+
+            # 🔍 Kiểm tra số lượng lịch trong ngày
+
+            count_same_day = Appointment.query.filter_by(
+
+                doctor_id=doctor_id,
+
+                appointment_date=appointment_date
+
+            ).count()
+
+            if existing:
+
+                flash("❌ Giờ này đã được đặt!", "danger")
+
+            elif count_same_day >= 5:
+
+                flash("❌ Bác sĩ đã đủ 5 lịch trong ngày!", "danger")
+
+            else:
+
+                schedule_appointment(
+
+                    patient_data,
+
+                    doctor_id,
+
+                    appointment_date,
+
+                    appointment_time,
+
+                    note
+
+                )
+
+                flash("✅ Đặt lịch thành công!", "success")
+
             return redirect(url_for('create_form', id=1))
 
         return render_template(
+
             'pages/tab2.html',
+
             doctors=doctors,
+
             appointments=appointments,
+
             patients=patients
+
         )
 
     elif (id == 3):
@@ -261,77 +324,51 @@ def create_form(id):
     else:
 
         from_date = request.args.get('from_date')
-
         to_date = request.args.get('to_date')
-
         doctor_id = request.args.get('doctor_id')
 
         doctors = dao.load_doctors()
 
-        revenue_data = []
-
         labels = []
-
         values = []
-
         doctor_revenue = None
 
-        # ✅ CHƯA CHỌN NGÀY → HIỆN THÔNG BÁO
+        # ✅ CHỈ CẢNH BÁO KHI USER ĐÃ BẤM XEM
+        if (doctor_id or request.args) and (not from_date or not to_date):
+            flash("⚠️ Hãy chọn thời gian bạn muốn xem doanh thu!", "warning")
 
-        if not from_date or not to_date:
-
-            flash("⚠️ Hãy chọn thời gian để xem báo cáo!", "warning")
-
-
-        else:
-
-            # Convert string -> date
-
+        elif from_date and to_date:
             from datetime import datetime
 
-            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            try:
+                from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+                to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
 
-            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+                # Doanh thu toàn phòng khám
+                revenue_data = dao.revenue_by_date(from_date_obj, to_date_obj)
+                labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
+                values = [r[1] for r in revenue_data]
 
-            # Doanh thu toàn phòng khám
+                # Doanh thu theo bác sĩ
+                if doctor_id:
+                    doctor_revenue = dao.revenue_by_doctor(
+                        doctor_id=int(doctor_id),
+                        from_date=from_date_obj,
+                        to_date=to_date_obj
+                    )
 
-            revenue_data = dao.revenue_by_date(from_date_obj, to_date_obj)
-
-            labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
-
-            values = [r[1] for r in revenue_data]
-
-            # Doanh thu theo bác sĩ
-
-            if doctor_id:
-                doctor_revenue = dao.revenue_by_doctor(
-
-                    doctor_id=int(doctor_id),
-
-                    from_date=from_date_obj,
-
-                    to_date=to_date_obj
-
-                )
+            except ValueError:
+                flash("⚠️ Dữ liệu thời gian không hợp lệ!", "danger")
 
         return render_template(
-
             "pages/tab5.html",
-
             labels=labels,
-
             values=values,
-
             doctors=doctors,
-
             doctor_revenue=doctor_revenue,
-
             from_date=from_date,
-
             to_date=to_date,
-
             doctor_id=doctor_id
-
         )
 
 
@@ -494,9 +531,9 @@ def doctor_management():
 
 
 
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask
 from clinicapp import dao
-from models import Doctor, Patient, Appointment
+
 
 app = Flask(__name__)
 app.secret_key = "secret_key"   # cần để flash hoạt động
