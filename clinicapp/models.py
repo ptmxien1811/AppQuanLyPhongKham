@@ -64,6 +64,7 @@ class Category(Base):
 class MedicineCategory(Base):
     price = Column(String(150), nullable=False)
     unit = Column(String(150),nullable=False)
+    expiration_date = Column(Date, nullable=True)
 
 class Medicine(Base):
     name = Column(String(150), nullable=False)
@@ -120,7 +121,7 @@ class Appointment(db.Model):
     doctor_id = Column(Integer, ForeignKey('doctor.id'), nullable=False)
 
     appointment_date = Column(Date, nullable=False)
-    appointment_time = Column(String(10), nullable=False)   # ✅ FIX
+    appointment_time = Column(String(10), nullable=False)
     note = Column(String(250))
 
 
@@ -145,7 +146,11 @@ if __name__ == '__main__':
 
             for m in meds:
                 db.session.add(Medicine(**m))
+        with open('data/appointment.json', encoding='utf-8') as f:
+            appointment = json.load(f)
 
+            for a in appointment:
+                db.session.add(Appointment(**a))
         with open('data/medicine_category.json', encoding='utf-8') as f:
             meds = json.load(f)
 
@@ -170,11 +175,11 @@ if __name__ == '__main__':
             for s in serv:
                 db.session.add(Services(**s))
 
-
         with open('data/doctor.json', encoding='utf-8') as f:
             doctor = json.load(f)
             for d in doctor:
                 db.session.add(Doctor(**d))
+
         with open('data/invoice.json', encoding='utf-8') as f:
             inv = json.load(f)
             for i in inv:

@@ -10,36 +10,24 @@
     <hr>
 
     <form method="POST">
-
         <div class="row align-items-end mb-3">
             <div class="col-md-3">
                 <label for="patient_name_input" class="form-label" style="color:#1E7BD0">Họ và tên</label>
-                <input type="text"
-                       id="patient_name_input"
-                       name="patient_name"
-                       class="form-control"
-                       placeholder="Nhập mới hoặc chọn..."
-                       list="patient_suggestions"
-                       onchange="autofillPatientInfo()"
-                       autocomplete="off"
-                       required>
+                <input type="text" id="patient_name_input" name="patient_name" class="form-control" placeholder="Nhập mới hoặc chọn..." list="patient_suggestions" onchange="autofillPatientInfo()" autocomplete="off" required>
                 <datalist id="patient_suggestions">
                     {% for p in patients %}
                     <option value="{{ p.name }}"></option>
                     {% endfor %}
                 </datalist>
             </div>
-
             <div class="col-md-2" style="color:#1E7BD0">
                 <label for="phone_input" class="form-label" >Số điện thoại</label>
                 <input type="text" name="phone_number" id="phone_input" class="form-control" placeholder="SĐT" required>
             </div>
-
             <div class="col-md-2" style="color:#1E7BD0">
                 <label for="birthday_input" class="form-label">Ngày sinh</label>
                 <input type="date" name="birthday" id="birthday_input" class="form-control" required>
             </div>
-
             <div class="col-md-2" style="color:#1E7BD0">
                 <label for="sex_input" class="form-label">Giới tính</label>
                 <select name="sex" id="sex_input" class="form-select" required>
@@ -48,7 +36,6 @@
                     <option value="Nữ">Nữ</option>
                 </select>
             </div>
-
             <div class="col-md-3" style="color:#1E7BD0">
                  <label for="identity_input" class="form-label">CCCD/CMND</label>
                  <input type="text" name="identity_card" id="identity_input" class="form-control" placeholder="Số giấy tờ" required>
@@ -64,7 +51,6 @@
                  <label for="address_input" class="form-label">Địa chỉ</label>
                  <input type="text" name="address" id="address_input" class="form-control" placeholder="Địa chỉ nhà" required>
             </div>
-
             <div class="col-md-3">
                 <label class="form-label" style="color:#1E7BD0">Bác sĩ phụ trách</label>
                 <select name="doctor_id" class="form-select" required>
@@ -74,7 +60,6 @@
                     {% endfor %}
                 </select>
             </div>
-
             <div class="col-md-3">
                 <label class="form-label">Ngày & Giờ</label>
                 <div class="input-group">
@@ -100,9 +85,7 @@
                 </button>
              </div>
         </div>
-
     </form>
-
     <div class="card shadow-sm mt-3">
         <div class="card-header border-bottom-0">
             <p class="h6 mb-0 d-flex align-items-center">
@@ -130,7 +113,7 @@
                         {% if appointments %}
                             {% for appt in appointments %}
                             <tr>
-                                <td>{{ loop.index }}</td>
+                                <td>{{ (current_page - 1) * config.PAGE_SIZE + loop.index }}</td>
                                 <td>{{ appt.patient.name }}</td>
                                 <td>{{ appt.patient.phone_number }}</td>
                                 <td>{{ appt.patient.sex }}</td>
@@ -139,21 +122,21 @@
                                 <td>{{ appt.appointment_time }}</td>
                                 <td>{{ appt.note or '' }}</td>
 
-<td class="text-center">
-                <form method="POST" action="{{ url_for('delete_detail', id=appt.id, name='Appointment') }}" style="display:inline;">
-                    <input type="hidden" name="action" value="delete_details">
-                    <button type="submit" class="btn text-danger p-0"
-                            onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn của {{ appt.patient.name }} không?');"
-                            title="Xóa lịch hẹn">
-                        <span class="material-symbols-rounded">delete</span>
-                    </button>
-                </form>
-            </td>
+                                <td class="text-center">
+                                    <form method="POST" action="{{ url_for('delete_detail', id=appt.id, name='Appointment') }}" style="display:inline;">
+                                        <input type="hidden" name="action" value="delete_details">
+                                        <button type="submit" class="btn text-danger p-0"
+                                                onclick="return confirm('Bạn có chắc muốn xóa lịch hẹn của {{ appt.patient.name }} không?');"
+                                                title="Xóa lịch hẹn">
+                                            <span class="material-symbols-rounded">delete</span>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                             {% endfor %}
                         {% else %}
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">Chưa có lịch hẹn nào.</td>
+                            <td colspan="9" class="text-center py-4 text-muted">Chưa có lịch hẹn nào.</td>
                         </tr>
                         {% endif %}
                     </tbody>
@@ -161,6 +144,33 @@
             </div>
         </div>
     </div>
+
+    {% if pages >= 1 %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('create_form', id=1, page=current_page-1) }}">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+
+            {% for i in range(1, pages + 1) %}
+            <li class="page-item {% if i == current_page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('create_form', id=1, page=i) }}">
+                    {{ i }}
+                </a>
+            </li>
+            {% endfor %}
+
+            <li class="page-item {% if current_page == pages %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('create_form', id=1, page=current_page+1) }}">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
 </div>
 </body>
 

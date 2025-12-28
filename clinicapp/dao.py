@@ -4,7 +4,7 @@ from models import Category, Medicine, User, TreatmentSheet, Services, Patient, 
 from sqlalchemy import or_
 from sqlalchemy import func
 from models import Invoice, Doctor
-from datetime import datetime
+from datetime import datetime, date
 from clinicapp import db
 from models import Patient, Appointment
 from flask import flash
@@ -27,7 +27,6 @@ def add_user(name, username, password, avatar):
 
 def delete_details(id, name):
     try:
-        # Tim ban ghi dua tren ID va Ten Model
         if (name == 'Medicine'):
             to_delete = Medicine.query.get(id)
         elif (name == 'TreatmentSheet'):
@@ -98,6 +97,12 @@ def add_patient_info(tenbenhnhan, ngaysinh, gioitinh, sodienthoai, cancuoc, emai
 
 
 def add_medicine_detail(tenthuoc, lieudung, donvi, songay, ngaykedon, patient_id,chiphi):
+    med_in_stock = MedicineCategory.query.filter(MedicineCategory.name == tenthuoc.strip()).first()
+
+    if med_in_stock:
+        if med_in_stock.expiration_date and med_in_stock.expiration_date < date.today():
+            return f"Thuốc '{tenthuoc}' đã hết hạn sử dụng (Hạn: {med_in_stock.expiration_date})!"
+
     new_medicine_detail = Medicine(
         name=tenthuoc,
         dosage=lieudung,
@@ -141,6 +146,20 @@ def count_patients(q=None, patient_id=None):
         query=query.filter(Patient.name.contains(q))
 
     return query.count()
+
+
+def count_appointments():
+    return Appointment.query.count()
+
+
+def load_appointments(page=1):
+    page_size = app.config['PAGE_SIZE']
+    start = (page - 1) * page_size
+
+    return Appointment.query.order_by(
+        Appointment.appointment_date.desc(),
+        Appointment.appointment_time.desc()
+    ).slice(start, start + page_size).all()
 
 def count_treatmentsheets(q=None, patient_id=None):
     query = TreatmentSheet.query
@@ -220,13 +239,10 @@ def get_patient_by_id(patient_id):
 
 
 
-# ================= DOCTOR =================
 def load_doctors():
-    """Lấy danh sách bác sĩ"""
     return Doctor.query.all()
 
 def get_doctor_by_id(doctor_id):
-    """Lấy thông tin bác sĩ theo ID"""
     return Doctor.query.get(doctor_id)
 
 
@@ -265,7 +281,7 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
         db.session.add(inv)
         db.session.commit()
 
-        # --- Gán invoice_id cho các dịch vụ và thuốc chưa thanh toán ---
+        # gan invoice id cho cac dich vu thuoc chua thanh toan
         treatments = TreatmentSheet.query.filter_by(patient_id=patient_id, invoice_id=None).all()
         for t in treatments:
             t.invoice_id = inv.id
@@ -275,7 +291,7 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
             m.invoice_id = inv.id
 
         db.session.commit()
-        # --- xong ---
+
         return inv
     except Exception as e:
         db.session.rollback()
@@ -283,15 +299,15 @@ def add_invoice(patient_id, doctor_id, total_service, total_medicine, vat, total
         return None
 
 def get_invoice_by_id(invoice_id):
-    """Lấy hóa đơn theo ID kèm dịch vụ và thuốc đã lưu"""
+    # lay hoa don theo id kem dich vu va thuoc da luu
     invoice = Invoice.query.get(invoice_id)
     if not invoice:
         return None
 
-    # Load dịch vụ đã gắn hóa đơn
+    # Load dich vu da gan hoa don
     invoice.services = TreatmentSheet.query.filter_by(invoice_id=invoice_id).all()
 
-    # Load thuốc đã gắn hóa đơn
+    # Load thuoc da gan hoa don
     invoice.medicines = Medicine.query.filter_by(invoice_id=invoice_id).all()
 
     return invoice
@@ -331,12 +347,12 @@ def load_unpaid_medicines(patient_id):
 
 
 def get_invoice_by_id(invoice_id):
-    """Lấy hóa đơn theo ID"""
+    # lay hoa don theo id
     return Invoice.query.get(invoice_id)
 
 
 def update_invoice(invoice_id, doctor_id=None, total_service=None, total_medicine=None, vat=None, total_payment=None):
-    """Cập nhật hóa đơn"""
+    # cap nhat hoa don
     inv = Invoice.query.get(invoice_id)
     if not inv:
         return None
@@ -362,7 +378,7 @@ def update_invoice(invoice_id, doctor_id=None, total_service=None, total_medicin
 
 
 def delete_invoice(invoice_id):
-    """Xóa hóa đơn"""
+    # xoa hoa don
     inv = Invoice.query.get(invoice_id)
     if not inv:
         return False
@@ -422,7 +438,7 @@ def delete_doctor(id):
             return False
     return False
 
-# ================= DOANH THU =================
+
 
 def revenue_by_date(from_date=None, to_date=None):
     query = db.session.query(
@@ -456,19 +472,19 @@ def revenue_by_doctor(doctor_id, from_date=None, to_date=None):
 
 
 def can_schedule(doctor_id, appointment_date, appointment_time):
-    # Chuyển appointment_date từ string sang date object
+    # Chuyen appointment_date tu string sang date object
     appt_date = datetime.strptime(appointment_date, "%Y-%m-%d").date()
     appt_datetime = datetime.strptime(f"{appointment_date} {appointment_time}", "%Y-%m-%d %H:%M")
 
-    # Không cho đặt lịch trong quá khứ
+    # khong cho dat lich trong qua khu
     if appt_datetime < datetime.now():
         return False, "Không thể đặt lịch trong quá khứ"
 
-    # Kiểm tra số lượng lịch trong ngày
+    # kiem tra so luong lich trong ngay
     count = Appointment.query.filter_by(doctor_id=doctor_id, appointment_date=appt_date).count()
     if count >= 5:
         return False, "Bác sĩ đã đủ 5 lịch trong ngày"
-    # Kiểm tra trùng giờ
+    # kiem tra trung gio
     existing = Appointment.query.filter_by(
         doctor_id=doctor_id,
         appointment_date=appt_date,

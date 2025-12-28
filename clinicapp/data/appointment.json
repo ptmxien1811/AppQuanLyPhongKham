@@ -1,0 +1,107 @@
+[
+  {
+    "patient_id": 1,
+    "doctor_id": 1,
+    "appointment_date": "2025-12-20",
+    "appointment_time": "08:00",
+    "note": "Khám răng định kỳ"
+  },
+  {
+    "patient_id": 2,
+    "doctor_id": 2,
+    "appointment_date": "2025-12-20",
+    "appointment_time": "09:30",
+    "note": "Tư vấn niềng răng"
+  },
+  {
+    "patient_id": 3,
+    "doctor_id": 1,
+    "appointment_date": "2025-12-22",
+    "appointment_time": "14:00",
+    "note": "Đau răng hàm dưới"
+  },
+  {
+    "patient_id": 4,
+    "doctor_id": 3,
+    "appointment_date": "2025-12-25",
+    "appointment_time": "08:30",
+    "note": "Nhổ răng khôn"
+  },
+  {
+    "patient_id": 5,
+    "doctor_id": 4,
+    "appointment_date": "2025-12-26",
+    "appointment_time": "10:00",
+    "note": "Trám răng sâu"
+  },
+  {
+    "patient_id": 6,
+    "doctor_id": 2,
+    "appointment_date": "2025-12-28",
+    "appointment_time": "15:30",
+    "note": "Tái khám niềng răng"
+  },
+  {
+    "patient_id": 7,
+    "doctor_id": 5,
+    "appointment_date": "2025-12-29",
+    "appointment_time": "09:00",
+    "note": "Phẫu thuật hàm mặt"
+  },
+  {
+    "patient_id": 8,
+    "doctor_id": 6,
+    "appointment_date": "2025-12-30",
+    "appointment_time": "14:30",
+    "note": "Lấy cao răng"
+  },
+  {
+    "patient_id": 9,
+    "doctor_id": 7,
+    "appointment_date": "2026-01-02",
+    "appointment_time": "08:00",
+    "note": "Làm răng sứ thẩm mỹ"
+  },
+  {
+    "patient_id": 10,
+    "doctor_id": 8,
+    "appointment_date": "2026-01-03",
+    "appointment_time": "10:30",
+    "note": "Chữa tủy răng số 6"
+  },
+  {
+    "patient_id": 11,
+    "doctor_id": 1,
+    "appointment_date": "2026-01-05",
+    "appointment_time": "16:00",
+    "note": "Kiểm tra Implant"
+  },
+  {
+    "patient_id": 12,
+    "doctor_id": 3,
+    "appointment_date": "2026-01-06",
+    "appointment_time": "09:30",
+    "note": "Đau nướu, chảy máu chân răng"
+  },
+  {
+    "patient_id": 13,
+    "doctor_id": 4,
+    "appointment_date": "2026-01-07",
+    "appointment_time": "15:00",
+    "note": "Hàn răng cửa"
+  },
+  {
+    "patient_id": 14,
+    "doctor_id": 2,
+    "appointment_date": "2026-01-08",
+    "appointment_time": "14:00",
+    "note": "Siết dây cung niềng răng"
+  },
+  {
+    "patient_id": 15,
+    "doctor_id": 5,
+    "appointment_date": "2026-01-10",
+    "appointment_time": "08:30",
+    "note": "Nhổ răng sữa cho bé"
+  }
+]

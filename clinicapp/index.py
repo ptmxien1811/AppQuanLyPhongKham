@@ -123,106 +123,69 @@ def create_form(id):
 
     elif (id == 1):
 
-        patients = dao.load_patient(page=None)
+        page = request.args.get('page', 1)
+        try:
+            page = int(page)
+        except ValueError:
+            page = 1
 
+        appointments = dao.load_appointments(page=page)
+        total_appt = dao.count_appointments()
+        pages = math.ceil(total_appt / app.config['PAGE_SIZE'])
+
+        patients = dao.load_patient(page=None)
         doctors = Doctor.query.all()
 
-        appointments = Appointment.query.order_by(
-
-            Appointment.appointment_date.desc(),
-
-            Appointment.appointment_time.desc()
-
-        ).all()
 
         if request.method == 'POST':
-
             patient_data = {
-
                 'name': request.form.get('patient_name'),
-
                 'sex': request.form.get('sex'),
-
                 'birthday': request.form.get('birthday'),
-
                 'phone_number': request.form.get('phone_number'),
-
                 'email': request.form.get('email'),
-
                 'address': request.form.get('address'),
-
                 'identity_card': request.form.get('identity_card')
-
             }
-
             doctor_id = int(request.form.get('doctor_id'))
-
             appointment_date = request.form.get('appointment_date')
-
             appointment_time = request.form.get('appointment_time')
-
             note = request.form.get('note')
 
-            # 🔍 Kiểm tra trùng giờ
-
+            # kiem tra trung gio
             existing = Appointment.query.filter_by(
-
                 doctor_id=doctor_id,
-
                 appointment_date=appointment_date,
-
                 appointment_time=appointment_time
-
             ).first()
 
-            # 🔍 Kiểm tra số lượng lịch trong ngày
-
+            # kiem tra so luong lich trong ngay
             count_same_day = Appointment.query.filter_by(
-
                 doctor_id=doctor_id,
-
                 appointment_date=appointment_date
-
             ).count()
-
             if existing:
-
-                flash("❌ Giờ này đã được đặt!", "danger")
-
+                flash("Giờ này đã được đặt!", "danger")
             elif count_same_day >= 5:
-
-                flash("❌ Bác sĩ đã đủ 5 lịch trong ngày!", "danger")
-
+                flash("Bác sĩ đã đủ 5 lịch trong ngày!", "danger")
             else:
-
                 schedule_appointment(
-
                     patient_data,
-
                     doctor_id,
-
                     appointment_date,
-
                     appointment_time,
-
                     note
-
                 )
-
-                flash("✅ Đặt lịch thành công!", "success")
-
+                flash("Đặt lịch thành công!", "success")
             return redirect(url_for('create_form', id=1))
 
         return render_template(
-
             'pages/tab2.html',
-
             doctors=doctors,
-
             appointments=appointments,
-
-            patients=patients
-
+            patients=patients,
+            pages = pages,
+            current_page = page
         )
 
     elif (id == 3):
@@ -234,22 +197,28 @@ def create_form(id):
             ngaykedon = request.form.get('ngaykedon')
             chiphi = request.form.get('chiphi')
 
-            # Lay ID benh nhan tu input an
             patient_id_hidden = request.form.get('patient_id_hidden')
 
             if patient_id_hidden:
-                if add_medicine_detail(tenthuoc=tenthuoc,
-                                       lieudung=lieudung,
-                                       donvi=donvi,
-                                       songay=songay,
-                                       ngaykedon=ngaykedon,
-                                       patient_id=patient_id_hidden,
-                                       chiphi=chiphi):
+                result = add_medicine_detail(tenthuoc=tenthuoc,
+                                             lieudung=lieudung,
+                                             donvi=donvi,
+                                             songay=songay,
+                                             ngaykedon=ngaykedon,
+                                             patient_id=patient_id_hidden,
+                                             chiphi=chiphi)
+
+
+                if result is True:
                     print('Them thuoc thanh cong!')
+                    flash("Kê thuốc thành công!", "success")
+
                 else:
-                    print('Loi khi them thuoc!')
+                    print(f'Loi: {result}')
+                    flash(f" {result}", "danger")
             else:
                 print('Chua chon benh nhan!')
+                flash("Vui lòng chọn bệnh nhân trước!", "warning")
 
         today = date.today()
         today_formatted = today.strftime('%Y-%m-%d')
@@ -257,14 +226,14 @@ def create_form(id):
         p_id = selected_patient.id if selected_patient else None
 
         all_patients = dao.load_patient(page=None)
-        meds_cate=dao.load_medicine_category()
+        meds_cate = dao.load_medicine_category()
         meds = dao.load_medicines(q=q, page=page, patient_id=p_id)
         total_meds = dao.count_medicines(q=q, patient_id=p_id)
         pages = math.ceil(total_meds / app.config["PAGE_SIZE"])
 
         return render_template("pages/tab3.html", meds=meds, pages=pages,
-                               today=today_formatted, patient=all_patients, selected_patient=selected_patient,meds_cate=meds_cate)
-
+                               today=today_formatted, patient=all_patients, selected_patient=selected_patient,
+                               meds_cate=meds_cate)
     elif (id == 4):
         patients = dao.load_patient(page=None)
         doctors = dao.load_doctors()
@@ -274,7 +243,7 @@ def create_form(id):
         doctor_id = request.form.get('doctor_id')
         created_date = request.form.get('created_date') or date.today()
 
-        # Tính tổng dịch vụ và thuốc
+        # tinh tong dich vu va thuoc
         services = dao.load_unpaid_treatments(patient_id) if patient_id else []
         medicines = dao.load_unpaid_medicines(patient_id) if patient_id else []
 
@@ -283,7 +252,7 @@ def create_form(id):
         vat = int((total_service + total_medicine) * 0.1)
         total_payment = total_service + total_medicine + vat
 
-        # POST: Lưu hóa đơn
+        # luu hoa don
         if request.method == 'POST' and patient_id and doctor_id:
             inv = dao.add_invoice(
                 patient_id=int(patient_id),
@@ -295,12 +264,12 @@ def create_form(id):
                 created_date=created_date
             )
             if inv:
-                flash("✅ Lưu hóa đơn thành công!", "success")
+                flash("Lưu hóa đơn thành công!", "success")
                 return redirect(url_for('view_invoice', invoice_id=inv.id))
             else:
-                flash("❌ Lỗi khi lưu hóa đơn!", "danger")
+                flash("Lỗi khi lưu hóa đơn!", "danger")
 
-        # GET: hiển thị thông tin tạm tính trước khi lưu
+        # hien thi thong tin tam tinh truoc khi luu
         invoice = None
         if selected_patient:
             invoice = SimpleNamespace(
@@ -335,9 +304,9 @@ def create_form(id):
         values = []
         doctor_revenue = None
 
-        # ✅ CHỈ CẢNH BÁO KHI USER ĐÃ BẤM XEM
+        # chi canh bao khi user da bam xem
         if (doctor_id or request.args) and (not from_date or not to_date):
-            flash("⚠️ Hãy chọn thời gian bạn muốn xem doanh thu!", "warning")
+            flash("Hãy chọn thời gian bạn muốn xem doanh thu!", "warning")
 
         elif from_date and to_date:
             from datetime import datetime
@@ -346,12 +315,12 @@ def create_form(id):
                 from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
                 to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
 
-                # Doanh thu toàn phòng khám
+                # doanh thu toan phong kham
                 revenue_data = dao.revenue_by_date(from_date_obj, to_date_obj)
                 labels = [r[0].strftime('%d/%m/%Y') for r in revenue_data]
                 values = [r[1] for r in revenue_data]
 
-                # Doanh thu theo bác sĩ
+                # Doanh thu theo bac si
                 if doctor_id:
                     doctor_revenue = dao.revenue_by_doctor(
                         doctor_id=int(doctor_id),
@@ -360,7 +329,7 @@ def create_form(id):
                     )
 
             except ValueError:
-                flash("⚠️ Dữ liệu thời gian không hợp lệ!", "danger")
+                flash("Dữ liệu thời gian không hợp lệ!", "danger")
 
         return render_template(
             "pages/tab5.html",
@@ -461,7 +430,7 @@ from datetime import date
 
 
 
-# ----------------- Xem hóa đơn -----------------
+# xem hoa don
 @app.route('/invoice/view/<int:invoice_id>')
 def view_invoice(invoice_id):
     invoice = dao.get_invoice_by_id(invoice_id)
