@@ -157,8 +157,7 @@ def load_appointments(page=1):
     start = (page - 1) * page_size
 
     return Appointment.query.order_by(
-        Appointment.appointment_date.desc(),
-        Appointment.appointment_time.desc()
+        Appointment.id.asc(),
     ).slice(start, start + page_size).all()
 
 def count_treatmentsheets(q=None, patient_id=None):
